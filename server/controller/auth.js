@@ -59,6 +59,7 @@ const LoginUser = async (req, res) => {
         res.json({ token, user: { id: user._id, userType: user.userType, fullName: user.fullName } });
     } catch (error) {
         res.status(500).json({ message: "Sunucu hatası." });
+        console.log(error);
     }
 };
 

@@ -9,9 +9,12 @@ const connectionString = process.env.DB_URL;
 app.use(express.json());
 
 const authRouter = require("./router/auth");
-
+const definitionsRouter = require("./router/definitions");
+const projectRouter = require("./router/project");
 
 app.use("/api/auth", authRouter);
+app.use("/api/definitions", definitionsRouter);
+app.use("/api/project", projectRouter);
 
 
 mongoose

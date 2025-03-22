@@ -31,11 +31,9 @@ const ProjectSchema = mongoose.Schema({
     },
     loc: {
         type: String,
-        required: true
     },
     sir: {
         type: String,
-        required: true
     },
     homePass:{
         type: String,
@@ -59,6 +57,42 @@ const ProjectSchema = mongoose.Schema({
         type: String,
         enum: ["İşlemde", "Onayda", "İncelendi", "Montaj Tamam", "Tamamlandı", "Islah ve Düzenleme", "Beklemede", "Arşivde"],
         default: "İşlemde"
+    },
+    IMLT: {
+        type: Boolean,
+        default: false
+    },
+    AKTV: {
+        type: Boolean,
+        default: false
+    },
+    ISLH: {
+        type: Boolean,
+        default: false
+    },
+    HSRSZ: {
+        type: Boolean,
+        default: false
+    },
+    KMZ: {
+        type: Boolean,
+        default: false
+    },
+    OTDR: {
+        type: Boolean,
+        default: false
+    },
+    MTBKT: {
+        type: Boolean,
+        default: false
+    },
+    KSF: {
+        type: Boolean,
+        default: false
+    },
+    BRKD: {
+        type: Boolean,
+        default: false
     }
 }, {timestamps: true})
 
