@@ -9,10 +9,6 @@ const PozSchema = mongoose.Schema({
         type: String,
         required: true
     },
-    operationType: {
-        type: String,
-        required: true
-    },
     priceType: {
         type: String,
         required: true
@@ -24,6 +20,9 @@ const PozSchema = mongoose.Schema({
     contractorPrice: {
         type: Number,
         default: 0
+    },
+    unit: {
+        type: String
     }
 }, { timestamps: true })
 

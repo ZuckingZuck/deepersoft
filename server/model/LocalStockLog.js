@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 
-const StockSchema = mongoose.Schema({
-    user: {
+const LocalStockLogSchema = mongoose.Schema({
+    creator: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "users",
         required: true
@@ -13,11 +13,11 @@ const StockSchema = mongoose.Schema({
     },
     amount: {
         type: Number,
-        required: true
+        default: 0
     },
     documentUrl: {
-        type: String,
+        type: String
     }
-}, {timestamps: true})
+}, {timestamps: true })
 
-module.exports = mongoose.model("stocks", StockSchema);
+module.exports = mongoose.model("localstocklogs", LocalStockLogSchema);

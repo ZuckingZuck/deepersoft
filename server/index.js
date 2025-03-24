@@ -11,11 +11,14 @@ app.use(express.json());
 const authRouter = require("./router/auth");
 const definitionsRouter = require("./router/definitions");
 const projectRouter = require("./router/project");
+const pozRouter = require("./router/poz");
+const stockRouter = require("./router/stock");
 
 app.use("/api/auth", authRouter);
 app.use("/api/definitions", definitionsRouter);
 app.use("/api/project", projectRouter);
-
+app.use("/api/poz", pozRouter);
+app.use("/api/stock", stockRouter);
 
 mongoose
   .connect(connectionString)

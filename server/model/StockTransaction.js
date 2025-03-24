@@ -7,9 +7,8 @@ const StockTranstionSchema = mongoose.Schema({
         required: true
     },
     seller: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "users",
-        required: true
+        type: String,
+        default: "Yerel Depo"
     },
     buyer: {
         type: mongoose.Schema.Types.ObjectId,
@@ -21,21 +20,9 @@ const StockTranstionSchema = mongoose.Schema({
         ref: "pozes",
         required: true
     },
-    date: {
-        type: Date,
+    amount: {
+        type: Number,
         required: true
-    },
-    refund: {
-        type: Number,
-        default: 0
-    },
-    warehouseRelease: {
-        type: Number,
-        default: 0
-    },
-    entitlement: {
-        type: Number,
-        default: 0
     }
 }, {timestamps: true})
 

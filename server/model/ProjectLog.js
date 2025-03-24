@@ -1,23 +1,20 @@
 const mongoose = require("mongoose");
 
-const StockSchema = mongoose.Schema({
+const ProjectLogSchema = mongoose.Schema({
     user: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "users",
         required: true
     },
-    poz: {
+    project: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "pozes",
+        ref: "projects",
         required: true
     },
-    amount: {
-        type: Number,
-        required: true
-    },
-    documentUrl: {
+    note: {
         type: String,
+        required: true
     }
 }, {timestamps: true})
 
-module.exports = mongoose.model("stocks", StockSchema);
+module.exports = mongoose.model("projectlogs", ProjectLogSchema);
