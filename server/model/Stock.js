@@ -14,9 +14,6 @@ const StockSchema = mongoose.Schema({
     amount: {
         type: Number,
         required: true
-    },
-    documentUrl: {
-        type: String,
     }
 }, {timestamps: true})
 

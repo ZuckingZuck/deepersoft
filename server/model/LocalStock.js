@@ -17,9 +17,6 @@ const LocalStockSchema = mongoose.Schema({
     stockOut: {
         type: Number,
         default: 0
-    },
-    documentUrl: {
-        type: String
     }
 }, {timestamps: true});
 

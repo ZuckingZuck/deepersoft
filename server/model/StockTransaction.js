@@ -6,13 +6,18 @@ const StockTranstionSchema = mongoose.Schema({
         ref: "users",
         required: true
     },
-    seller: {
+    base: {
         type: String,
         default: "Yerel Depo"
     },
-    buyer: {
+    user: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "users",
+        required: true
+    },
+    transactionType: {
+        type: String,
+        enum: ["Satın Alım", "İade"],
         required: true
     },
     poz: {
@@ -23,7 +28,10 @@ const StockTranstionSchema = mongoose.Schema({
     amount: {
         type: Number,
         required: true
-    }
+    },
+    documentUrl: {
+        type: String
+    },
 }, {timestamps: true})
 
 module.exports = mongoose.model("stocktransactions", StockTranstionSchema);

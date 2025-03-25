@@ -2,6 +2,7 @@ const LocalStockDB = require("../model/LocalStock");
 const StockDB = require("../model/Stock");
 const StockTranstionDB = require("../model/StockTransaction");
 const LocalStockLogDB = require("../model/LocalStockLog");
+const PozDB = require("../model/Poz");
 
 const AddLocalStock = async (req, res) => {
     try {
@@ -36,7 +37,7 @@ const TransferStock = async (req, res) => {
         const localStock = await LocalStockDB.findOne({ _id: localStockId });
 
         if (localStock.amount < amount) {
-            return res.status(409).json({ message: "Transfer için yeterli biri depoda bulunmuyor." });
+            return res.status(409).json({ message: "Transfer için yeterli birim depoda bulunmuyor." });
         } else {
             // Kullanıcının deposunda ilgili poz ile kayıt var mı kontrol et
             const existingStock = await StockDB.findOne({ user, poz: localStock.poz });
@@ -56,7 +57,7 @@ const TransferStock = async (req, res) => {
             await localStock.save();
 
             // Transfer işlemini logla
-            await LogStockTransfer(req.user._id, user, localStock.poz, amount);
+            await LogStockTransfer(req.user._id, user, "Satın Alım", localStock.poz, amount);
 
             res.status(200).json({ message: "Transfer başarılı." });
         }
@@ -76,9 +77,9 @@ const LogLocalStock = async (user, poz, amount) => {
     }
 }
 
-const LogStockTransfer = async (creator, buyer, poz, amount) => {
+const LogStockTransfer = async (creator, user, transactionType, poz, amount) => {
     try {
-        const newStockTransaction = new StockTranstionDB({creator, buyer, poz, amount});
+        const newStockTransaction = new StockTranstionDB({creator, user, transactionType, poz, amount});
         await newStockTransaction.save();
     } catch (error) {
         console.log(error);
@@ -97,5 +98,38 @@ const GetMyStock = async (req, res) => {
     }
 }
 
+const RefundStock = async (req, res) => {
+    try {
+        const { refunder, poz, amount } = req.body;
+        const checkPoz = await PozDB.findById(poz);
 
-module.exports = { AddLocalStock, TransferStock, GetMyStock };
+        if (!checkPoz) {
+            return res.status(404).json({ message: "Böyle bir poz bulunmamaktadır." });
+        }
+
+        const stock = await StockDB.findOne({ user: refunder, poz });
+        if (stock.amount < amount) {
+            return res.status(409).json({ message: "İade için yeterli stok yok." });
+        }
+
+        stock.amount -= amount;
+        await stock.save();
+
+        const localStock = await LocalStockDB.findOne({ poz });
+        if (localStock) {
+            localStock.amount += amount;
+            await localStock.save();
+        } else {
+            await new LocalStockDB({ poz, amount }).save();
+        }
+        await LogStockTransfer(req.user._id, refunder, "İade", poz, amount);
+        res.status(200).json({ message: "Stok başarıyla iade edildi." });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Sunucu hatası", error });
+    }
+};
+
+
+module.exports = { AddLocalStock, TransferStock, GetMyStock, RefundStock };

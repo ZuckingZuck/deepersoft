@@ -122,8 +122,22 @@ const AddProjectPoz = async (req, res) => {
     }
 };
 
+const ChangeProjectStatus = async (req, res) => {
+    try {
+        const id = req.params.id;
+        const { status } = req.body;
+        const project = await ProjectDB.findById(id);
+        project.status = status;
+        await project.save();
+        res.status(200).json({ message: "Proje durumu başarıyla değiştirildi." });
+    } catch (error) {
+        console.log(error);
+        res.status(500).json(error);
+    }
+}
+
 
 module.exports = { 
     CreateProject, GetProjects, GetProjectDetail, DeleteProject,
-    AddProjectLog, DeleteProjectLog, AddProjectPoz
+    AddProjectLog, DeleteProjectLog, AddProjectPoz, ChangeProjectStatus
  };
