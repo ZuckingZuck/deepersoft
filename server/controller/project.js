@@ -21,16 +21,23 @@ const CreateProject = async (req, res) => {
 
 const GetProjects = async (req, res) => {
     try {
-        const projects = await ProjectDB.find()
+        const { projectStatus } = req.query; // Query parametresinden status al
+        console.log("istekgeldi")
+        const filter = projectStatus ? { status: projectStatus } : {}; // Eğer varsa filtre uygula
+        console.log(projectStatus);
+        const projects = await ProjectDB.find(filter)
             .populate('contractor', 'fullName userType')
             .populate('supervisor', 'fullName userType');
-        
+
+        console.log(projects);
+
         res.status(200).json(projects);
     } catch (error) {
         console.log(error);
         res.status(500).json({ message: "Sunucu hatası." });
     }
 };
+
 
 
 const GetProjectDetail = async (req, res) => {
