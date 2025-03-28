@@ -18,7 +18,6 @@ const Login = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Logo ve form animasyonu için
     setTimeout(() => setLogoVisible(true), 300);
     setTimeout(() => setFormVisible(true), 600);
   }, []);
@@ -29,16 +28,13 @@ const Login = () => {
     try {
       const response = await api.post("/api/auth/login", values);
       
-      // Token'ı localStorage'a kaydet
       localStorage.setItem("token", response.data.token);
       localStorage.setItem("user", JSON.stringify(response.data.user));
       
-      // Redux'a kullanıcı bilgilerini ekle
       dispatch(userLogin(response.data.user));
       
       message.success("Giriş başarılı! Yönlendiriliyorsunuz...");
       
-      // Kullanıcı listesini ve öbek verilerini Redux'a yükle
       let dataLoadError = false;
       try {
         await dispatch(fetchAllUsers()).unwrap();
@@ -67,36 +63,40 @@ const Login = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-blue-800 to-blue-600 items-center justify-center p-4 overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-800 to-blue-600 overflow-hidden">
-        <div className="absolute w-96 h-96 -top-12 -left-12 bg-blue-500 rounded-full opacity-20 blur-3xl"></div>
-        <div className="absolute w-96 h-96 bottom-0 right-0 bg-blue-400 rounded-full opacity-20 blur-3xl"></div>
+    <div className="min-h-screen flex items-center justify-center bg-[#f0f2f5] p-4">
+      {/* Arka plan desenleri */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute -top-40 -left-40 w-80 h-80 bg-blue-500 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
+        <div className="absolute -bottom-40 -right-40 w-80 h-80 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-pink-500 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
       </div>
-      
-      <div className="relative w-full max-w-md z-10">
-        {/* Logo ve Animasyon */}
+
+      <div className="relative w-full max-w-md">
+        {/* Logo */}
         <div 
           className={`flex justify-center mb-8 transform ${logoVisible ? 'translate-y-0 opacity-100' : '-translate-y-12 opacity-0'} transition-all duration-700 ease-out`}
         >
-          <div className="bg-white p-5 rounded-full shadow-2xl">
-            <div className="flex items-center justify-center w-16 h-16 bg-gradient-to-r from-blue-600 to-blue-500 rounded-full">
-              <SafetyOutlined className="text-white text-3xl" />
+          <div className="relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full blur-lg opacity-50"></div>
+            <div className="relative bg-white p-6 rounded-full shadow-2xl">
+              <div className="flex items-center justify-center w-20 h-20 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full">
+                <SafetyOutlined className="text-white text-4xl" />
+              </div>
             </div>
           </div>
         </div>
-        
+
+        {/* Form */}
         <div 
-          className={`bg-white rounded-lg shadow-2xl overflow-hidden transform ${formVisible ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'} transition-all duration-700 ease-out`}
+          className={`bg-white rounded-2xl shadow-2xl overflow-hidden transform ${formVisible ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'} transition-all duration-700 ease-out`}
         >
-          {/* Başlık */}
-          <div className="bg-gradient-to-r from-blue-700 to-blue-600 py-5 px-7 text-white">
+          <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-8 text-white">
             <Title level={3} className="text-white m-0 flex items-center">
-              <LoginOutlined className="mr-3" /> Giriş Yap
+              <LoginOutlined className="mr-3 text-2xl" /> Giriş Yap
             </Title>
-            <p className="m-0 mt-2 text-blue-100">DeepSoft Yönetim Sistemine hoş geldiniz</p>
+            <p className="m-0 mt-2 text-blue-100 text-lg">DeepSoft Yönetim Sistemine hoş geldiniz</p>
           </div>
-          
-          {/* Form */}
+
           <div className="p-8">
             {error && (
               <Alert
@@ -122,7 +122,7 @@ const Login = () => {
                 <Input
                   prefix={<UserOutlined className="site-form-item-icon text-gray-400" />}
                   placeholder="Kullanıcı Adı"
-                  className="py-3 rounded-lg"
+                  className="py-3 rounded-xl border-gray-300 hover:border-blue-500 focus:border-blue-500 transition-colors"
                   autoComplete="username"
                 />
               </Form.Item>
@@ -134,7 +134,7 @@ const Login = () => {
                 <Input.Password
                   prefix={<LockOutlined className="site-form-item-icon text-gray-400" />}
                   placeholder="Şifre"
-                  className="py-3 rounded-lg"
+                  className="py-3 rounded-xl border-gray-300 hover:border-blue-500 focus:border-blue-500 transition-colors"
                   autoComplete="current-password"
                 />
               </Form.Item>
@@ -143,7 +143,7 @@ const Login = () => {
                 <Button
                   type="primary"
                   htmlType="submit"
-                  className="w-full h-14 bg-gradient-to-r from-blue-600 to-blue-500 border-none shadow-md hover:shadow-lg rounded-lg flex items-center justify-center text-lg"
+                  className="w-full h-14 bg-gradient-to-r from-blue-600 to-purple-600 border-none shadow-lg hover:shadow-xl rounded-xl flex items-center justify-center text-lg font-medium transition-all duration-300 hover:scale-[1.02]"
                   loading={loading}
                 >
                   {loading ? (
@@ -156,9 +156,10 @@ const Login = () => {
                 </Button>
               </Form.Item>
             </Form>
-            
-            <div className="text-gray-500 text-sm text-center mt-6 border-t border-gray-100 pt-4">
-              <p>© 2023 DeepSoft Tüm Hakları Saklıdır</p>
+
+            <div className="text-gray-500 text-sm text-center mt-8 border-t border-gray-100 pt-6">
+              <p className="font-medium">© 2023 DeepSoft</p>
+              <p className="text-gray-400">Tüm Hakları Saklıdır</p>
             </div>
           </div>
         </div>

@@ -1,0 +1,14 @@
+.status-card-wrapper {
+    display: block;
+    height: 120px;
+}
+
+.status-card-wrapper .ant-badge {
+    display: block;
+    height: 100%;
+    width: 100%;
+}
+
+.status-card-wrapper .ant-badge-count {
+    z-index: 1;
+} 
