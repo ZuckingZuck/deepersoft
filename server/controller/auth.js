@@ -57,4 +57,20 @@ const LoginUser = async (req, res) => {
     }
 };
 
-module.exports = { CreateUser, LoginUser };
+const GetUsers = async (req, res) => {
+    try {
+        // Opsiyonel olarak userType'a göre filtreleme yapılabilir
+        const { userType } = req.query;
+        const filter = userType ? { userType } : {};
+        
+        // Password alanını çıkararak kullanıcıları getir
+        const users = await User.find(filter).select('-password');
+        
+        res.status(200).json(users);
+    } catch (error) {
+        console.error("Kullanıcılar listelenirken hata oluştu:", error);
+        res.status(500).json({ message: "Sunucu hatası." });
+    }
+};
+
+module.exports = { CreateUser, LoginUser, GetUsers };

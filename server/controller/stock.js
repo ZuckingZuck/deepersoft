@@ -77,11 +77,33 @@ const LogLocalStock = async (user, poz, amount) => {
     }
 }
 
+const GetLocalStockLog = async (req, res) => {
+    try {
+        const localStockLog = await LocalStockLogDB.find().populate("poz").populate("creator", "fullName");
+        res.status(200).json(localStockLog);
+    } catch (error) {
+        console.log(error);
+    }
+}
+
 const LogStockTransfer = async (creator, user, transactionType, poz, amount) => {
     try {
         const newStockTransaction = new StockTranstionDB({creator, user, transactionType, poz, amount});
         await newStockTransaction.save();
     } catch (error) {
+        console.log(error);
+    }
+}
+
+const GetStockTransferLog = async (req, res) => {
+    try {
+        const stockTransferLog = await StockTranstionDB.find()
+            .populate("poz")
+            .populate("creator", "fullName")
+            .populate("user", "fullName");
+        res.status(200).json(stockTransferLog);
+    } catch (error) {
+        res.status(500).json(error);
         console.log(error);
     }
 }
@@ -92,6 +114,16 @@ const GetMyStock = async (req, res) => {
         const user = req.user;
         const myStocks = await StockDB.find({ user: user._id }).populate("poz");
         res.status(200).json(myStocks);
+    } catch (error) {
+        console.log(error);
+        res.status(500).json(error);
+    }
+}
+
+const GetLocalStock = async (req, res) => {
+    try {
+        const localStock = await LocalStockDB.find().populate("poz");
+        res.status(200).json(localStock);
     } catch (error) {
         console.log(error);
         res.status(500).json(error);
@@ -132,4 +164,5 @@ const RefundStock = async (req, res) => {
 };
 
 
-module.exports = { AddLocalStock, TransferStock, GetMyStock, RefundStock };
+module.exports = { AddLocalStock, TransferStock, 
+    GetMyStock, RefundStock, GetLocalStock, GetLocalStockLog, GetStockTransferLog };

@@ -1,20 +1,57 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import Home from "../pages/Home";
 import Projects from "../pages/Projects";
+import ProjectNew from "../pages/ProjectNew";
+import ProjectDetail from "../pages/ProjectDetail";
+import Login from "../pages/Login";
 import NotFound from "../pages/NotFound";
+import PrivateRoute from "./PrivateRoute";
 import { useSelector } from "react-redux";
+import axios from "axios";
+import api from "../utils/api";
+import UserProfile from '../pages/UserProfile';
+import UserList from '../pages/UserList';
+import UserDetail from '../pages/UserDetail';
+import StockStatus from '../pages/StockStatus';
+import StockMovements from '../pages/StockMovements';
+import StockTransfer from '../pages/StockTransfer';
+import PozList from '../pages/PozList';
 
 const AppRouter = () => {
-    //const admin = useSelector((state) => state.admin.admin)
+  const user = useSelector((state) => state.user.user);
+  const fetchRequirements = async () => {
+    try {
+     const response = await api.get('/api/req/sys');
+     console.log(response.data); 
+    } catch (error) {
+      console.log(error);      
+    }
+  }
+
+  useEffect(() => {
+    fetchRequirements();
+  }, [])
   return (
     <Routes>
-      <Route
-        path="/"
-        element={<Home />}
-      />
-      <Route path="/projects" element={<Projects />} />
+      {/* Genel Rotalar */}
+      <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
       <Route path="*" element={<NotFound />} />
+
+      {/* Korumalı Rotalar */}
+      <Route element={<PrivateRoute />}>
+        <Route path="/" element={<Home />} />
+        <Route path="/projects" element={<Projects />} />
+        <Route path="/projects/new" element={<ProjectNew />} />
+        <Route path="/projects/:id" element={<ProjectDetail />} />
+        <Route path="/profile" element={<UserProfile />} />
+        <Route path="/profile/:id" element={<UserDetail />} />
+        <Route path="/ayarlar/kullanıcılar" element={<UserList />} />
+        <Route path="/stok/durum" element={<StockStatus />} />
+        <Route path="/stok/hareketler" element={<StockMovements />} />
+        <Route path="/stok/transfer" element={<StockTransfer />} />
+        <Route path="/poz/liste" element={<PozList />} />
+      </Route>
     </Routes>
   );
 };

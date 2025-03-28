@@ -10,10 +10,13 @@ router.post("/pozunit", AddPozUnit);
 router.delete("/pozunit/:id", DeletePozUnit);
 
 router.get("/cluster", GetClusters);
+router.get("/clusters", GetClusters);
 router.post("/cluster", AddCluster);
 router.delete("/cluster/:id", DeleteCluster);
 
 router.get("/field", GetFieldTypes);
+router.get("/fieldtypes", GetFieldTypes);
 router.post("/field", AddFieldType);
-router.delete("/field/:id", DeleteFieldType)
+router.delete("/field/:id", DeleteFieldType);
+
 module.exports = router;

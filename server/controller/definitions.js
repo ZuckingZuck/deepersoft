@@ -180,5 +180,5 @@ module.exports = {
     AddPozType, GetPozTypes, DeletePozType, 
     AddPozUnit, GetPozUnits, DeletePozUnit, 
     AddCluster, GetClusters, DeleteCluster,
-    AddFieldType, GetFieldTypes, DeleteFieldType 
+    AddFieldType, GetFieldTypes, DeleteFieldType
 };
