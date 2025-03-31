@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Table, Tag, Spin, message, Typography, Button, Modal, Form, Select, InputNumber } from 'antd';
-import { SwapOutlined, UserOutlined, ShoppingCartOutlined, RollbackOutlined, PlusOutlined } from '@ant-design/icons';
+import { Card, Table, Tag, Spin, message, Typography, Button, Modal, Form, Select, InputNumber, Divider } from 'antd';
+import { SwapOutlined, UserOutlined, ShoppingCartOutlined, RollbackOutlined, PlusOutlined, FileOutlined } from '@ant-design/icons';
 import api from '../utils/api';
 import { useSelector, useDispatch } from 'react-redux';
 import { fetchAllUsers } from '../redux/userSlice';
+import FileUpload from '../components/FileUpload';
+import cdnAdapter from '../utils/cdnAdapter';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -20,6 +22,8 @@ const StockTransfer = () => {
     const dispatch = useDispatch();
     const users = useSelector((state) => state.user.allUsers);
     const userStatus = useSelector((state) => state.user.userStatus);
+    const [documentUrl, setDocumentUrl] = useState('');
+    const [refundDocumentUrl, setRefundDocumentUrl] = useState('');
 
     useEffect(() => {
         const fetchData = async () => {
@@ -70,26 +74,72 @@ const StockTransfer = () => {
         }
     };
 
+    const handleFileUploadSuccess = (url) => {
+        console.log('Yüklenen belge URL:', url);
+        setDocumentUrl(url);
+        message.success('Belge başarıyla yüklendi');
+    };
+
+    const handleRefundFileUploadSuccess = (url) => {
+        console.log('İade belge URL:', url);
+        setRefundDocumentUrl(url);
+        message.success('Belge başarıyla yüklendi');
+    };
+
     const handleTransfer = async (values) => {
         try {
-            await api.post('/api/stock/transfer', values);
+            // Form değerlerini ve belge URL'sini bir araya getir
+            const transferData = {
+                ...values,
+                documentUrl: documentUrl || null // Eğer documentUrl boşsa null olarak belirle
+            };
+            
+            console.log('Transfer işlemi başlatılıyor...');
+            console.log('Form değerleri:', values);
+            console.log('Belge URL:', documentUrl);
+            console.log('Gönderilecek veri:', transferData);
+            
+            // API'ye POST isteği gönder
+            const response = await api.post('/api/stock/transfer', transferData);
+            console.log('Transfer yanıtı:', response.data);
+            
+            // Başarılı işlem sonrası
             message.success('Stok transferi başarıyla gerçekleştirildi');
             setIsTransferModalVisible(false);
             transferForm.resetFields();
+            setDocumentUrl('');
             fetchTransferData();
         } catch (error) {
+            console.error('Transfer hatası:', error);
             message.error(error.response?.data?.message || 'Stok transferi sırasında bir hata oluştu');
         }
     };
 
     const handleRefund = async (values) => {
         try {
-            await api.post('/api/stock/refund', values);
+            // Form değerlerini ve belge URL'sini bir araya getir
+            const refundData = {
+                ...values,
+                documentUrl: refundDocumentUrl || null // Eğer documentUrl boşsa null olarak belirle
+            };
+            
+            console.log('İade işlemi başlatılıyor...');
+            console.log('Form değerleri:', values);
+            console.log('Belge URL:', refundDocumentUrl);
+            console.log('Gönderilecek veri:', refundData);
+            
+            // API'ye POST isteği gönder
+            const response = await api.post('/api/stock/refund', refundData);
+            console.log('İade yanıtı:', response.data);
+            
+            // Başarılı işlem sonrası
             message.success('Stok iadesi başarıyla gerçekleştirildi');
             setIsRefundModalVisible(false);
             refundForm.resetFields();
+            setRefundDocumentUrl('');
             fetchTransferData();
         } catch (error) {
+            console.error('İade hatası:', error);
             message.error(error.response?.data?.message || 'Stok iadesi sırasında bir hata oluştu');
         }
     };
@@ -183,6 +233,45 @@ const StockTransfer = () => {
                     {(record.amount * record.poz.price).toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
                 </Text>
             ),
+        },
+        {
+            title: 'Belge',
+            dataIndex: 'documentUrl',
+            key: 'documentUrl',
+            render: (url) => {
+                console.log('Belge URL değeri:', url, '(type:', typeof url, ')');
+                
+                // URL'nin varlığını kontrol et
+                if (!url || url === "undefined" || url === "null") {
+                    return <Tag color="red">Belge Yok</Tag>;
+                }
+                
+                // URL'nin string tipinde olduğundan emin ol
+                const documentUrl = String(url);
+                console.log('String olarak URL:', documentUrl);
+                
+                try {
+                    // cdnAdapter ile tam URL oluştur
+                    const fileUrl = cdnAdapter.getFileUrl(documentUrl);
+                    console.log('Oluşturulan tam dosya URL:', fileUrl);
+                    
+                    return (
+                        <Button 
+                            type="link" 
+                            icon={<FileOutlined />}
+                            onClick={() => {
+                                console.log('Belge açılıyor:', fileUrl);
+                                window.open(fileUrl, '_blank');
+                            }}
+                        >
+                            Belgeyi Görüntüle
+                        </Button>
+                    );
+                } catch (error) {
+                    console.error('URL dönüştürme hatası:', error);
+                    return <Tag color="red">URL Hatası: {error.message}</Tag>;
+                }
+            }
         }
     ];
 
@@ -229,6 +318,79 @@ const StockTransfer = () => {
                             >
                                 İade Gir
                             </Button>
+                            
+                            {/* Test butonu */}
+                            <Button 
+                                type="default"
+                                onClick={async () => {
+                                    try {
+                                        console.log("Test butonuna tıklandı, API çağrısı yapılıyor...");
+                                        const response = await api.get('/api/stock/test-log');
+                                        console.log("Test yanıtı:", response.data);
+                                        message.success("Test tamamlandı! Sunucu konsolu kontrol edilmeli.");
+                                    } catch (error) {
+                                        console.error("Test hatası:", error);
+                                        message.error("Test sırasında hata oluştu!");
+                                    }
+                                }}
+                            >
+                                Console Log Testi
+                            </Button>
+                            
+                            {/* Ana sunucu testi */}
+                            <Button 
+                                type="default"
+                                onClick={async () => {
+                                    try {
+                                        console.log("Ana sunucu test butonuna tıklandı");
+                                        const response = await fetch('http://localhost:9090/test-log');
+                                        const data = await response.json();
+                                        console.log("Ana test yanıtı:", data);
+                                        message.success("Ana sunucu testi tamamlandı!");
+                                    } catch (error) {
+                                        console.error("Ana test hatası:", error);
+                                        message.error("Ana sunucu testi sırasında hata oluştu!");
+                                    }
+                                }}
+                            >
+                                Ana Sunucu Testi
+                            </Button>
+                            
+                            {/* Özel test sunucusu */}
+                            <Button 
+                                type="primary"
+                                danger
+                                onClick={async () => {
+                                    try {
+                                        console.log("Özel test sunucusu butonuna tıklandı");
+                                        const response = await fetch('http://localhost:9091/hello');
+                                        const data = await response.json();
+                                        console.log("Özel test yanıtı:", data);
+                                        message.success("Özel test tamamlandı!");
+                                        
+                                        // POST isteği de deneyelim
+                                        console.log("POST isteği yapılıyor...");
+                                        const postResponse = await fetch('http://localhost:9091/test-post', {
+                                            method: 'POST',
+                                            headers: {
+                                                'Content-Type': 'application/json'
+                                            },
+                                            body: JSON.stringify({
+                                                test: true,
+                                                message: "Test verisi",
+                                                timestamp: new Date().toISOString()
+                                            })
+                                        });
+                                        const postData = await postResponse.json();
+                                        console.log("POST yanıtı:", postData);
+                                    } catch (error) {
+                                        console.error("Özel test hatası:", error);
+                                        message.error("Özel test sırasında hata oluştu!");
+                                    }
+                                }}
+                            >
+                                Özel Test Sunucusu
+                            </Button>
                         </div>
                     </div>
                 </div>
@@ -265,6 +427,7 @@ const StockTransfer = () => {
                 onCancel={() => {
                     setIsTransferModalVisible(false);
                     transferForm.resetFields();
+                    setDocumentUrl('');
                 }}
                 footer={null}
             >
@@ -311,10 +474,27 @@ const StockTransfer = () => {
                         <InputNumber min={1} className="w-full" />
                     </Form.Item>
 
+                    <Divider>Belge Yükleme</Divider>
+                    
+                    <div className="mb-4">
+                        <label className="block mb-2 text-sm font-medium">Satın Alım Belgesi</label>
+                        <FileUpload 
+                            onSuccess={handleFileUploadSuccess} 
+                            buttonText="Belge Yükle"
+                            maxFileSize={5} // 5MB
+                        />
+                        {documentUrl && (
+                            <div className="mt-2 text-green-500 text-sm">
+                                ✓ Belge yüklendi
+                            </div>
+                        )}
+                    </div>
+
                     <div className="flex justify-end gap-2">
                         <Button onClick={() => {
                             setIsTransferModalVisible(false);
                             transferForm.resetFields();
+                            setDocumentUrl('');
                         }}>
                             İptal
                         </Button>
@@ -337,6 +517,7 @@ const StockTransfer = () => {
                 onCancel={() => {
                     setIsRefundModalVisible(false);
                     refundForm.resetFields();
+                    setRefundDocumentUrl('');
                 }}
                 footer={null}
             >
@@ -383,10 +564,27 @@ const StockTransfer = () => {
                         <InputNumber min={1} className="w-full" />
                     </Form.Item>
 
+                    <Divider>Belge Yükleme</Divider>
+                    
+                    <div className="mb-4">
+                        <label className="block mb-2 text-sm font-medium">İade Belgesi</label>
+                        <FileUpload 
+                            onSuccess={handleRefundFileUploadSuccess} 
+                            buttonText="Belge Yükle"
+                            maxFileSize={5} // 5MB
+                        />
+                        {refundDocumentUrl && (
+                            <div className="mt-2 text-green-500 text-sm">
+                                ✓ Belge yüklendi
+                            </div>
+                        )}
+                    </div>
+
                     <div className="flex justify-end gap-2">
                         <Button onClick={() => {
                             setIsRefundModalVisible(false);
                             refundForm.resetFields();
+                            setRefundDocumentUrl('');
                         }}>
                             İptal
                         </Button>

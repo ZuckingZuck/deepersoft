@@ -1,0 +1,15 @@
+{
+  "files": [
+    {
+      "id": "4bb2dac6-5a98-4740-93a4-df57c4e7c476",
+      "originalName": "sample.pdf",
+      "fileName": "1743423489573-556937744.pdf",
+      "filePath": "C:\\Users\\mitha\\Documents\\deepersoft\\cdn\\uploads\\1743423489573-556937744.pdf",
+      "fileType": "application/pdf",
+      "fileSize": 18810,
+      "publicUrl": "http://localhost:5000/files/1743423489573-556937744.pdf",
+      "createdAt": "2025-03-31T12:18:09.583Z",
+      "projectId": null
+    }
+  ]
+}

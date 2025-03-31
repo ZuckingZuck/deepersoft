@@ -11,11 +11,11 @@ const requireAuth = async (req, res, next) => {
   try {
     const { id } = jwt.verify(token, process.env.JWT_SECRET);
     const user = await User.findOne({ _id: id });
-    if (user.status === "Aktif") {
+    if (user && user.status === "Aktif") {
       req.user = user;
       next();
-    }else{
-        res.status(403).json({ error: "Erişiminiz yasaklanmış" });
+    } else {
+      res.status(403).json({ error: "Erişiminiz yasaklanmış" });
     }
   } catch (error) {
     console.log(error);

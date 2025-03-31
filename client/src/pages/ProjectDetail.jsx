@@ -19,7 +19,8 @@ import {
   Table,
   Avatar,
   Tooltip,
-  Modal
+  Modal,
+  Select
 } from 'antd';
 import { 
   ArrowLeftOutlined, 
@@ -45,10 +46,13 @@ import {
   PhoneOutlined,
   MailOutlined,
   WarningOutlined,
-  PlusOutlined
+  PlusOutlined,
+  FileOutlined
 } from '@ant-design/icons';
 import api from '../utils/api';
 import AddPozModal from '../components/AddPozModal';
+import FileUpload from '../components/FileUpload';
+import cdnAdapter from '../utils/cdnAdapter';
 
 const { Title, Text } = Typography;
 
@@ -78,50 +82,104 @@ const ProjectDetail = () => {
   const [selectedPoz, setSelectedPoz] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isAddingPoz, setIsAddingPoz] = useState(false);
+  const [documents, setDocuments] = useState([]);
+  const [isAddDocumentModalOpen, setIsAddDocumentModalOpen] = useState(false);
+  const [documentType, setDocumentType] = useState('');
+  const [documentUrl, setDocumentUrl] = useState('');
+  const [loadingDocuments, setLoadingDocuments] = useState(false);
 
+  // Sistem verilerini yükle
   useEffect(() => {
-    // Sistem verilerini yükle
     dispatch(fetchSystemData());
   }, [dispatch]);
 
-  useEffect(() => {
-    const fetchProjectDetails = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        
-        // API'den proje detaylarını çekelim - supervisor ve contractor populate edilmiş olacak
-        const response = await api.get(`/api/project/${id}`);
-        console.log("API Response:", response.data);
-        
-        // Response'un yapısını kontrol edelim ve hata ayıklama için tüm veriyi konsola yazdıralım
-        console.log("Tüm API Yanıtı:", JSON.stringify(response.data, null, 2));
-        
-        // Response'un yapısını kontrol edelim
-        if (response.data) {
-          if (response.data.project) {
-            // { project, logs, pozes } formatında
-            setProject(response.data.project);
-            setLogs(response.data.logs || []);
-            setPozes(response.data.pozes || []);
-          } else {
-            // Doğrudan proje verisi
-            setProject(response.data);
-          }
+  // Proje detaylarını çeken fonksiyon
+  const fetchProjectDetails = async () => {
+    try {
+      setLoading(true);
+      setLoadingDocuments(true); // Belge yükleme durumunu da ayarla
+      setError(null);
+      
+      // API'den proje detaylarını çekelim - supervisor ve contractor populate edilmiş olacak
+      const response = await api.get(`/api/project/${id}`);
+      console.log("API Response:", response.data);
+      
+      // Response'un yapısını kontrol edelim ve hata ayıklama için tüm veriyi konsola yazdıralım
+      console.log("Tüm API Yanıtı:", JSON.stringify(response.data, null, 2));
+      
+      // Response'un yapısını kontrol edelim
+      if (response.data) {
+        if (response.data.project) {
+          // { project, logs, pozes } formatında
+          setProject(response.data.project);
+          setLogs(response.data.logs || []);
+          setPozes(response.data.pozes || []);
+          setDocuments(response.data.documents || []); // Belgeleri API yanıtından al
         } else {
-          throw new Error("Proje verileri boş");
+          // Doğrudan proje verisi
+          setProject(response.data);
         }
-      } catch (error) {
-        console.error('Proje detayları yüklenirken hata:', error);
-        setError('Proje detayları yüklenemedi. Lütfen daha sonra tekrar deneyin.');
-        message.error('Proje detayları yüklenemedi.');
-      } finally {
-        setLoading(false);
+      } else {
+        throw new Error("Proje verileri boş");
       }
-    };
+    } catch (error) {
+      console.error('Proje detayları yüklenirken hata:', error);
+      setError('Proje detayları yüklenemedi. Lütfen daha sonra tekrar deneyin.');
+      message.error('Proje detayları yüklenemedi.');
+    } finally {
+      setLoading(false);
+      setLoadingDocuments(false); // Belge yükleme durumunu güncelle
+    }
+  };
 
-    fetchProjectDetails();
+  useEffect(() => {
+    if (id) {
+      fetchProjectDetails();
+    }
   }, [id]);
+
+  // Dosya yükleme başarılı olduğunda
+  const handleFileUploadSuccess = (url) => {
+    setDocumentUrl(url);
+    message.success('Belge başarıyla yüklendi');
+  };
+
+  // Belge ekle
+  const handleAddDocument = async () => {
+    if (!documentType || !documentUrl) {
+      message.warning('Lütfen belge türü seçin ve bir dosya yükleyin');
+      return;
+    }
+
+    try {
+      await api.post('/api/project/document', {
+        project: id,
+        documentType,
+        documentUrl
+      });
+
+      message.success('Belge başarıyla eklendi');
+      setIsAddDocumentModalOpen(false);
+      setDocumentType('');
+      setDocumentUrl('');
+      fetchProjectDetails(); // Proje detaylarını yeniden yükle
+    } catch (error) {
+      console.error('Belge eklenirken hata:', error);
+      message.error('Belge eklenirken bir hata oluştu');
+    }
+  };
+
+  // Belge sil
+  const handleDeleteDocument = async (documentId) => {
+    try {
+      await api.delete(`/api/project/document/${documentId}`);
+      message.success('Belge başarıyla silindi');
+      fetchProjectDetails(); // Proje detaylarını yeniden yükle
+    } catch (error) {
+      console.error('Belge silinirken hata:', error);
+      message.error('Belge silinirken bir hata oluştu');
+    }
+  };
 
   // Durum etiketi oluştur
   const getStatusTag = (status) => {
@@ -407,6 +465,89 @@ const ProjectDetail = () => {
     }
   ];
 
+  // Belge tablosu sütunları
+  const documentColumns = [
+    {
+      title: 'Belge Türü',
+      dataIndex: 'documentType',
+      key: 'documentType',
+      render: (text) => <Tag color="blue">{text}</Tag>
+    },
+    {
+      title: 'Belge Formatı',
+      dataIndex: 'documentUrl',
+      key: 'format',
+      render: (url) => {
+        const extension = url.split('.').pop().toLowerCase();
+        let format = extension.toUpperCase();
+        let color = 'default';
+        
+        // Format tipine göre renk belirleme
+        if (['jpg', 'jpeg', 'png', 'gif'].includes(extension)) {
+          color = 'green';
+        } else if (extension === 'pdf') {
+          color = 'red';
+        } else if (['zip', 'rar'].includes(extension)) {
+          color = 'purple';
+        } else if (['doc', 'docx', 'xls', 'xlsx'].includes(extension)) {
+          color = 'blue';
+        } else if (['kmz', 'kml'].includes(extension)) {
+          color = 'orange';
+        } else if (extension === 'sor') {
+          color = 'geekblue';
+        }
+        
+        return <Tag color={color}>{format}</Tag>;
+      }
+    },
+    {
+      title: 'Ekleyen',
+      dataIndex: ['user', 'fullName'],
+      key: 'user',
+      render: (text) => (
+        <div className="flex items-center">
+          <UserOutlined className="mr-2 text-gray-500" />
+          <span>{text}</span>
+        </div>
+      )
+    },
+    {
+      title: 'Eklenme Tarihi',
+      dataIndex: 'createdAt',
+      key: 'createdAt',
+      render: (date) => new Date(date).toLocaleDateString('tr-TR')
+    },
+    {
+      title: 'İşlemler',
+      key: 'actions',
+      render: (_, record) => (
+        <Space>
+          <Button 
+            type="primary" 
+            icon={<FileOutlined />}
+            onClick={() => window.open(cdnAdapter.getFileUrl(record.documentUrl), '_blank')}
+          >
+            Görüntüle
+          </Button>
+          <Button 
+            type="primary" 
+            danger
+            icon={<DeleteOutlined />}
+            onClick={() => Modal.confirm({
+              title: 'Belgeyi Sil',
+              content: 'Bu belgeyi silmek istediğinizden emin misiniz?',
+              okText: 'Evet',
+              cancelText: 'İptal',
+              onOk: () => handleDeleteDocument(record._id)
+            })}
+          >
+            Sil
+          </Button>
+        </Space>
+      )
+    }
+  ];
+
   return (
     <div className="p-6 max-w-6xl mx-auto">
       <div className="flex justify-between items-center mb-6">
@@ -580,6 +721,39 @@ const ProjectDetail = () => {
         )}
       </Card>
 
+      {/* Belgeler Bölümü */}
+      <Card 
+        title={
+          <div className="flex justify-between items-center">
+            <span>Proje Belgeleri</span>
+            <Button 
+              type="primary" 
+              icon={<PlusOutlined />} 
+              onClick={() => setIsAddDocumentModalOpen(true)}
+            >
+              Belge Ekle
+            </Button>
+          </div>
+        }
+        className="mb-6 shadow-md"
+      >
+        {loadingDocuments ? (
+          <div className="text-center py-4">
+            <Spin size="large" />
+            <div className="mt-2">Belgeler yükleniyor...</div>
+          </div>
+        ) : documents.length === 0 ? (
+          <Empty description="Henüz belge eklenmemiş" />
+        ) : (
+          <Table 
+            columns={documentColumns} 
+            dataSource={documents} 
+            rowKey="_id" 
+            pagination={{ pageSize: 5 }}
+          />
+        )}
+      </Card>
+
       {/* Tarihçe Bölümü */}
       <Card 
         title={<div className="flex items-center"><ClockCircleOutlined className="mr-2" /> Proje Tarihçesi</div>}
@@ -653,6 +827,71 @@ const ProjectDetail = () => {
         {selectedPoz && (
           <p>{selectedPoz.poz.name} pozunu silmek istediğinizden emin misiniz?</p>
         )}
+      </Modal>
+
+      {/* Belge Ekleme Modalı */}
+      <Modal
+        title="Proje Belgesi Ekle"
+        open={isAddDocumentModalOpen}
+        onCancel={() => {
+          setIsAddDocumentModalOpen(false);
+          setDocumentType('');
+          setDocumentUrl('');
+        }}
+        footer={[
+          <Button 
+            key="cancel" 
+            onClick={() => {
+              setIsAddDocumentModalOpen(false);
+              setDocumentType('');
+              setDocumentUrl('');
+            }}
+          >
+            İptal
+          </Button>,
+          <Button 
+            key="submit" 
+            type="primary" 
+            onClick={handleAddDocument}
+            disabled={!documentType || !documentUrl}
+          >
+            Belge Ekle
+          </Button>
+        ]}
+      >
+        <div className="mb-4">
+          <label className="block mb-2">Belge Türü:</label>
+          <Select
+            placeholder="Belge türü seçin"
+            style={{ width: '100%' }}
+            value={documentType}
+            onChange={(value) => setDocumentType(value)}
+          >
+            <Select.Option value="AKTIVASYON FOTO">AKTIVASYON FOTO</Select.Option>
+            <Select.Option value="BARKOD">BARKOD</Select.Option>
+            <Select.Option value="HASARSIZLIK (FORM)">HASARSIZLIK (FORM)</Select.Option>
+            <Select.Option value="IMALAT FOTO">IMALAT FOTO</Select.Option>
+            <Select.Option value="ISLAH FOTO">ISLAH FOTO</Select.Option>
+            <Select.Option value="KESIF (FORM)">KESIF (FORM)</Select.Option>
+            <Select.Option value="KMZ (KMZ)">KMZ (KMZ)</Select.Option>
+            <Select.Option value="MUTABAKAT (FORM)">MUTABAKAT (FORM)</Select.Option>
+            <Select.Option value="OTDR (SOR)">OTDR (SOR)</Select.Option>
+          </Select>
+        </div>
+        
+        <div className="mb-4">
+          <label className="block mb-2">Belge Yükle:</label>
+          <FileUpload 
+            onSuccess={handleFileUploadSuccess} 
+            buttonText="Belge Yükle"
+            maxFileSize={10}
+          />
+          {documentUrl && (
+            <div className="mt-2 text-green-500">
+              ✓ Belge başarıyla yüklendi
+            </div>
+          )}
+        </div>
       </Modal>
     </div>
   );

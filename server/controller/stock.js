@@ -33,7 +33,8 @@ const AddLocalStock = async (req, res) => {
 
 const TransferStock = async (req, res) => {
     try {
-        const { user, localStockId, amount } = req.body;
+        const { user, localStockId, amount, documentUrl } = req.body;
+        console.log(documentUrl, "documentUrl");
         const localStock = await LocalStockDB.findOne({ _id: localStockId });
 
         if (localStock.amount < amount) {
@@ -57,7 +58,7 @@ const TransferStock = async (req, res) => {
             await localStock.save();
 
             // Transfer işlemini logla
-            await LogStockTransfer(req.user._id, user, "Satın Alım", localStock.poz, amount);
+            await LogStockTransfer(req.user._id, user, "Satın Alım", localStock.poz, amount, documentUrl);
 
             res.status(200).json({ message: "Transfer başarılı." });
         }
@@ -86,14 +87,27 @@ const GetLocalStockLog = async (req, res) => {
     }
 }
 
-const LogStockTransfer = async (creator, user, transactionType, poz, amount) => {
+const LogStockTransfer = async (creator, user, transactionType, poz, amount, documentUrl = null) => {
     try {
-        const newStockTransaction = new StockTranstionDB({creator, user, transactionType, poz, amount});
-        await newStockTransaction.save();
+        // DocumentUrl kontrolü
+        let finalDocumentUrl = documentUrl || null;
+        
+        const newStockTransaction = new StockTranstionDB({
+            creator, 
+            user, 
+            transactionType, 
+            poz, 
+            amount,
+            documentUrl: finalDocumentUrl
+        });
+        
+        const savedTransaction = await newStockTransaction.save();
+        return savedTransaction;
     } catch (error) {
-        console.log(error);
+        console.error('StockTransaction kayıt hatası:', error);
+        throw error;
     }
-}
+};
 
 const GetStockTransferLog = async (req, res) => {
     try {
@@ -132,7 +146,7 @@ const GetLocalStock = async (req, res) => {
 
 const RefundStock = async (req, res) => {
     try {
-        const { refunder, poz, amount } = req.body;
+        const { refunder, poz, amount, documentUrl } = req.body;
         const checkPoz = await PozDB.findById(poz);
 
         if (!checkPoz) {
@@ -154,7 +168,7 @@ const RefundStock = async (req, res) => {
         } else {
             await new LocalStockDB({ poz, amount }).save();
         }
-        await LogStockTransfer(req.user._id, refunder, "İade", poz, amount);
+        await LogStockTransfer(req.user._id, refunder, "İade", poz, amount, documentUrl);
         res.status(200).json({ message: "Stok başarıyla iade edildi." });
 
     } catch (error) {

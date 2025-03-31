@@ -21,6 +21,16 @@ const AddPozModal = ({ isOpen, onClose, onAdd, loading }) => {
         });
     };
 
+    const filterOption = (input, option) => {
+        if (!option || !option.children) return false;
+        
+        // option.children bir string değilse, string'e çevir
+        const searchText = String(option.children).toLowerCase();
+        const searchInput = input.toLowerCase();
+        
+        return searchText.includes(searchInput);
+    };
+
     const renderPozSelect = () => {
         if (status === 'loading') {
             return (
@@ -48,9 +58,7 @@ const AddPozModal = ({ isOpen, onClose, onAdd, loading }) => {
                     const poz = pozList.find(p => p._id === value);
                     setSelectedPoz(poz);
                 }}
-                filterOption={(input, option) =>
-                    option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
-                }
+                filterOption={filterOption}
             >
                 {pozList.map(poz => (
                     <Select.Option key={poz._id} value={poz._id}>

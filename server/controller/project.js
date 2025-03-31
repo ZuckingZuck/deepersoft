@@ -1,8 +1,10 @@
 const ProjectDB = require("../model/Project");
 const ProjectLogDB = require("../model/ProjectLog");
 const ProjectPozDB = require("../model/ProjectPoz");
+const ProjectDocumentDB = require("../model/ProjectDocument");
 const StockDB = require("../model/Stock");
 const PozDB = require("../model/Poz");
+const fetch = require('node-fetch');
 
 //Project
 const CreateProject = async (req, res) => {
@@ -73,11 +75,12 @@ const GetProjectDetail = async (req, res) => {
         
         const projectLogs = await ProjectLogDB.find({ project: id }).populate("user", "fullName");
         const projectPozes = await ProjectPozDB.find({ project: id }).populate("poz").populate("user", "fullName");
-        
+        const projectDocuments = await ProjectDocumentDB.find({ project: id }).populate("user", "fullName");
         res.status(200).json({ 
             project: project, 
             logs: projectLogs, 
-            pozes: projectPozes 
+            pozes: projectPozes,
+            documents: projectDocuments
         });
     } catch (error) {
         console.log("Hata:", error);
@@ -226,7 +229,122 @@ const ChangeProjectStatus = async (req, res) => {
     }
 }
 
+// Project Documents
+const AddProjectDocument = async (req, res) => {
+    try {
+        const { project, documentType, documentUrl } = req.body;
+        const user = req.user._id;
+        
+        if (!project || !documentType || !documentUrl) {
+            return res.status(400).json({ message: "Proje ID, belge türü ve belge URL'i gereklidir." });
+        }
+        
+        // Proje var mı kontrol et
+        const existingProject = await ProjectDB.findById(project);
+        if (!existingProject) {
+            return res.status(404).json({ message: "Proje bulunamadı." });
+        }
+        
+        const newDocument = new ProjectDocumentDB({
+            project,
+            user,
+            documentType,
+            documentUrl
+        });
+        
+        await newDocument.save();
+        
+        // Proje logu ekle
+        const documentLogNote = `"${documentType}" belge tipinde yeni bir doküman eklendi.`;
+        await new ProjectLogDB({ user, project, note: documentLogNote }).save();
+        
+        res.status(201).json({
+            message: "Proje belgesi başarıyla eklendi",
+            document: newDocument
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Proje belgesi eklenirken bir hata oluştu." });
+    }
+};
+
+const GetProjectDocuments = async (req, res) => {
+    try {
+        const { projectId } = req.params;
+        
+        // Proje var mı kontrol et
+        const existingProject = await ProjectDB.findById(projectId);
+        if (!existingProject) {
+            return res.status(404).json({ message: "Proje bulunamadı." });
+        }
+        
+        const documents = await ProjectDocumentDB.find({ project: projectId })
+            .populate("user", "fullName email")
+            .sort({ createdAt: -1 });
+        
+        res.status(200).json(documents);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Proje belgeleri alınırken bir hata oluştu." });
+    }
+};
+
+const DeleteProjectDocument = async (req, res) => {
+    try {
+        const documentId = req.params.id;
+        
+        const document = await ProjectDocumentDB.findById(documentId);
+        if (!document) {
+            return res.status(404).json({ message: "Belge bulunamadı." });
+        }
+        
+        // CDN'den dosyayı silme işlemi
+        try {
+            // Belgenin URL'inden dosya adını çıkar
+            const documentUrl = document.documentUrl;
+            const fileNameWithParams = documentUrl.split('/').pop();
+            // URL'de query parametreleri varsa onları temizle (? işaretinden sonraki kısmı at)
+            const fileName = fileNameWithParams.split('?')[0];
+            
+            console.log("Silinecek dosya adı:", fileName);
+            
+            // CDN sunucusundan dosyayı sil
+            const cdnUrl = process.env.CDN_URL || 'http://localhost:5000';
+            const deleteResponse = await fetch(`${cdnUrl}/api/files/${fileName}`, {
+                method: 'DELETE'
+            });
+            
+            if (!deleteResponse.ok) {
+                const errorData = await deleteResponse.json();
+                console.error(`CDN'den dosya silinirken hata: ${JSON.stringify(errorData)}`);
+            } else {
+                console.log(`CDN'den dosya başarıyla silindi: ${fileName}`);
+            }
+        } catch (cdnError) {
+            console.error('CDN dosya silme hatası:', cdnError);
+            // CDN hatası olsa bile veritabanından silme işlemine devam et
+        }
+        
+        // Veritabanından belge kaydını sil
+        await ProjectDocumentDB.findByIdAndDelete(documentId);
+        
+        // Proje logu ekle
+        const documentLogNote = `"${document.documentType}" belge tipindeki doküman silindi.`;
+        await new ProjectLogDB({ 
+            user: req.user._id, 
+            project: document.project, 
+            note: documentLogNote 
+        }).save();
+        
+        res.status(200).json({ message: "Proje belgesi başarıyla silindi." });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Proje belgesi silinirken bir hata oluştu." });
+    }
+};
+
 module.exports = { 
     CreateProject, GetProjects, GetProjectDetail, DeleteProject,
-    AddProjectLog, DeleteProjectLog, AddProjectPoz, ChangeProjectStatus, DeleteProjectPoz
- };
+    AddProjectLog, DeleteProjectLog, AddProjectPoz, ChangeProjectStatus, DeleteProjectPoz,
+    AddProjectDocument, GetProjectDocuments, DeleteProjectDocument 
+};
