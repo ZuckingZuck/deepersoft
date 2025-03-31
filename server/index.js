@@ -15,14 +15,14 @@ const projectRouter = require("./router/project");
 const pozRouter = require("./router/poz");
 const stockRouter = require("./router/stock");
 const reqRouter = require("./router/requirements");
-
+const reportRouter = require("./router/report");
 app.use("/api/auth", authRouter);
 app.use("/api/definitions", definitionsRouter);
 app.use("/api/project", projectRouter);
 app.use("/api/poz", pozRouter);
 app.use("/api/stock", stockRouter);
 app.use("/api/req", reqRouter);
-
+app.use("/api/report", reportRouter);
 mongoose
   .connect(connectionString)
   .then(() => {

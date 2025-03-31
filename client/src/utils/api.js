@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // API URL'ini .env dosyasından al veya varsayılan olarak 9090 portunu kullan
-const API_URL = import.meta.env.VITE_API || 'https://api.rmodel.com.tr';
+const API_URL = import.meta.env.VITE_API || 'http://localhost:9090';
 
 // Axios instance oluştur
 const api = axios.create({

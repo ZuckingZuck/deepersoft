@@ -17,6 +17,7 @@ import StockStatus from '../pages/StockStatus';
 import StockMovements from '../pages/StockMovements';
 import StockTransfer from '../pages/StockTransfer';
 import PozList from '../pages/PozList';
+import Reports from '../pages/Reports';
 
 const AppRouter = () => {
   const user = useSelector((state) => state.user.user);
@@ -51,6 +52,7 @@ const AppRouter = () => {
         <Route path="/stok/hareketler" element={<StockMovements />} />
         <Route path="/stok/transfer" element={<StockTransfer />} />
         <Route path="/poz/liste" element={<PozList />} />
+        <Route path="/raporlar" element={<Reports />} />
       </Route>
     </Routes>
   );

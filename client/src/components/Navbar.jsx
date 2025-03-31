@@ -80,6 +80,12 @@ export default function Navbar() {
       ]
     },
     {
+      key: 'reports',
+      label: "Raporlar",
+      icon: <ProjectOutlined />,
+      link: "/raporlar"
+    },
+    {
       key: 'definitions',
       label: "Tanımlamalar",
       icon: <AppstoreOutlined />,

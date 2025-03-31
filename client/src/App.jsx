@@ -3,7 +3,6 @@ import AppRouter from "./router/AppRouter";
 import Navbar from "./components/Navbar";
 import api from "./utils/api";
 import { useEffect } from "react";
-import UserProfile from './pages/UserProfile';
 
 function App() {
   const fetchRequirements = async () => {
