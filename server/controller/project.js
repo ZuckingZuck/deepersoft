@@ -4,6 +4,7 @@ const ProjectPozDB = require("../model/ProjectPoz");
 const ProjectDocumentDB = require("../model/ProjectDocument");
 const StockDB = require("../model/Stock");
 const PozDB = require("../model/Poz");
+const ContractorPozPriceDB = require("../model/ContractorPozPrice");
 const fetch = require('node-fetch');
 
 //Project
@@ -80,37 +81,47 @@ const GetProjectDetail = async (req, res) => {
         const { id } = req.params;
         const user = req.user;
         
-        // Mongoose'un kendi populate yöntemini kullanalım - daha güvenilir
+        // Projeyi bul
         const project = await ProjectDB.findById(id)
-            .populate("supervisor", "fullName email phone userType")
-            .populate("contractor", "fullName email phone userType");
-        
+            .populate('supervisor')
+            .populate('contractor');
+
         if (!project) {
-            return res.status(404).json({ message: "Proje bulunamadı." });
+            return res.status(404).json({ message: "Proje bulunamadı" });
         }
 
-        // Yetki kontrolü
-        if (user.userType === 'Taşeron' && project.contractor._id.toString() !== user._id.toString()) {
-            return res.status(403).json({ message: "Bu projeye erişim yetkiniz yok" });
+        // Pozları getir
+        const pozes = await ProjectPozDB.find({ projectId: id }).populate('pozId');
+
+        // Logları getir
+        const logs = await ProjectLogDB.find({ project: id })
+            .populate('user')
+            .sort({ createdAt: -1 });
+
+        // Belgeleri getir
+        const documents = await ProjectDocumentDB.find({ project: id })
+            .populate('user')
+            .sort({ createdAt: -1 });
+
+        // Kullanıcı tipine göre poz fiyatlarını filtrele
+        let filteredPozes = pozes;
+        if (user.userType === 'Taşeron') {
+            filteredPozes = pozes.map(poz => ({
+                ...poz.toObject(),
+                price: poz.contractorPrice || poz.price,
+                totalPrice: poz.contractorTotalPrice || poz.totalPrice
+            }));
         }
 
-        console.log(project);
-        // Populate durumunu kontrol edip logla
-        console.log("Supervisor populate durumu:", project.supervisor ? "Başarılı" : "Başarısız");
-        console.log("Contractor populate durumu:", project.contractor ? "Başarılı" : "Başarısız");
-        
-        const projectLogs = await ProjectLogDB.find({ project: id }).populate("user", "fullName");
-        const projectPozes = await ProjectPozDB.find({ project: id }).populate("poz").populate("user", "fullName");
-        const projectDocuments = await ProjectDocumentDB.find({ project: id }).populate("user", "fullName");
-        res.status(200).json({ 
-            project: project, 
-            logs: projectLogs, 
-            pozes: projectPozes,
-            documents: projectDocuments
+        res.json({
+            project,
+            pozes: filteredPozes,
+            logs,
+            documents
         });
     } catch (error) {
-        console.log("Hata:", error);
-        res.status(500).json({ message: "Sunucu hatası." });
+        console.error('Proje detayları alınırken hata:', error);
+        res.status(500).json({ message: "Proje detayları alınırken bir hata oluştu" });
     }
 };
 
@@ -173,42 +184,67 @@ const DeleteProjectLog = async (req, res) => {
 //Project Poz
 const AddProjectPoz = async (req, res) => {
     try {
+        const { projectId } = req.params;
+        const { pozId, amount } = req.body;
         const user = req.user;
-        const project = await ProjectDB.findById(req.params.id);
 
+        // Poz'un var olup olmadığını kontrol et
+        const poz = await PozDB.findById(pozId);
+        if (!poz) {
+            return res.status(404).json({ message: "Poz bulunamadı" });
+        }
+
+        const constractorPozPrice = await ContractorPozPriceDB.findOne({
+            contractorId: user._id,
+            pozId: poz._id
+        });
+
+        // Projenin var olup olmadığını kontrol et
+        const project = await ProjectDB.findById(projectId);
         if (!project) {
             return res.status(404).json({ message: "Proje bulunamadı" });
         }
 
-        // Yetki kontrolü
-        if (user.userType === 'Taşeron' && project.contractor.toString() !== user._id.toString()) {
-            return res.status(403).json({ message: "Bu projeye poz ekleme yetkiniz yok" });
-        }
-
-        const selectedPoz = await PozDB.findById(req.body.poz);
-        const userStock = await StockDB.findOne({ user: user._id, poz: selectedPoz._id });
-
-        const newProjectPoz = new ProjectPozDB({ 
-            project: project._id, 
-            user: user._id, 
-            poz: req.body.poz, 
-            amount: req.body.amount 
+        // Yeni ProjectPoz oluştur
+        const projectPoz = new ProjectPozDB({
+            projectId,
+            pozId,
+            name: poz.name,
+            unit: poz.unit,
+            price: poz.price,
+            quantity: amount,
+            contractorPrice: constractorPozPrice.price
         });
 
-        if (selectedPoz.priceType.includes("M")) {
-            if (!userStock) {
-                await new StockDB({ user: user, poz: req.body.poz, amount: req.body.amount * -1 }).save();
+        await projectPoz.save();
+
+        // Stok işlemleri
+        if (user.userType === 'Taşeron') {
+            // Mevcut stok kontrolü
+            let stock = await StockDB.findOne({
+                user: user._id,
+                poz: pozId
+            });
+
+            if (stock) {
+                // Stok varsa güncelle
+                stock.amount -= amount;
+                await stock.save();
             } else {
-                userStock.amount -= req.body.amount;
-                await userStock.save();
+                // Stok yoksa yeni oluştur
+                stock = new StockDB({
+                    user: user._id,
+                    poz: pozId,
+                    amount: -amount // Negatif değer olarak kaydet
+                });
+                await stock.save();
             }
         }
-        
-        await newProjectPoz.save();
-        return res.status(200).json(newProjectPoz);
+
+        res.status(201).json(projectPoz);
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: "Internal Server Error" });
+        console.error('Poz eklenirken hata:', error);
+        res.status(500).json({ message: "Poz eklenirken bir hata oluştu" });
     }
 };
 
@@ -409,9 +445,8 @@ const GetProject = async (req, res) => {
             .lean();
 
         // Proje pozlarını getir
-        const pozes = await ProjectPozDB.find({ project: project._id })
-            .populate('poz')
-            .populate('user', 'fullName')
+        const pozes = await ProjectPozDB.find({ projectId: project._id })
+            .sort({ createdAt: -1 })
             .lean();
 
         // Proje belgelerini getir
@@ -523,9 +558,35 @@ const SearchProject = async (req, res) => {
     }
 };
 
+// Poz güncelleme fonksiyonu
+const UpdateProjectPoz = async (req, res) => {
+    try {
+        const { pozId } = req.params;
+        const { quantity, status, notes, contractorPrice } = req.body;
+
+        const projectPoz = await ProjectPozDB.findById(pozId);
+        if (!projectPoz) {
+            return res.status(404).json({ message: "Poz bulunamadı" });
+        }
+
+        // Güncelleme yap
+        projectPoz.quantity = quantity || projectPoz.quantity;
+        projectPoz.status = status || projectPoz.status;
+        projectPoz.notes = notes || projectPoz.notes;
+        projectPoz.contractorPrice = contractorPrice !== undefined ? contractorPrice : projectPoz.contractorPrice;
+
+        await projectPoz.save();
+
+        res.json(projectPoz);
+    } catch (error) {
+        console.error('Poz güncellenirken hata:', error);
+        res.status(500).json({ message: "Poz güncellenirken bir hata oluştu" });
+    }
+};
+
 module.exports = { 
     CreateProject, GetProjects, GetProjectDetail, DeleteProject,
     AddProjectLog, DeleteProjectLog, AddProjectPoz, ChangeProjectStatus, DeleteProjectPoz,
     AddProjectDocument, GetProjectDocuments, DeleteProjectDocument, GetProject, GetAllProjects,
-    SearchProject
+    SearchProject, UpdateProjectPoz
 };

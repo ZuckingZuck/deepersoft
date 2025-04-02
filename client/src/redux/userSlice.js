@@ -14,74 +14,74 @@ export const fetchAllUsers = createAsyncThunk(
     }
 );
 
-// Örnek statik kullanıcılar (API bağlantısı olmadığında)
-const staticUsers = [
-    { _id: '1', fullName: 'Ahmet Yılmaz', userType: 'Supervisor' },
-    { _id: '2', fullName: 'Mehmet Demir', userType: 'Supervisor' },
-    { _id: '3', fullName: 'Ayşe Kaya', userType: 'Taşeron' },
-    { _id: '4', fullName: 'Fatma Şahin', userType: 'Taşeron' },
-    { _id: '5', fullName: 'Ali Öztürk', userType: 'Taşeron' }
-];
+// Kullanıcı listesini getir
+export const fetchUserList = createAsyncThunk(
+    'user/fetchUserList',
+    async () => {
+        const response = await api.get('/api/user/list');
+        return response.data;
+    }
+);
+
+const initialState = {
+    user: localStorage.getItem("user") ? JSON.parse(localStorage.getItem("user")) : null,
+    userList: [],
+    allUsers: [],
+    supervisors: [],
+    contractors: [],
+    status: 'idle',
+    error: null
+};
 
 const userSlice = createSlice({
-    name: "user",
-    initialState: {
-        user: localStorage.getItem("user") ? JSON.parse(localStorage.getItem("user")) : null,
-        allUsers: [],
-        supervisors: [],
-        contractors: [],
-        userStatus: 'idle', // 'idle' | 'loading' | 'succeeded' | 'failed'
-        error: null
-    },
+    name: 'user',
+    initialState,
     reducers: {
         userLogin: (state, action) => {
             state.user = action.payload;
+            localStorage.setItem("user", JSON.stringify(action.payload));
         },
         userLogout: (state) => {
             localStorage.removeItem("user");
             state.user = null;
         },
-        setAllUsers: (state, action) => {
-            state.allUsers = action.payload;
-            state.supervisors = action.payload.filter(user => user.userType === "Supervisor");
-            state.contractors = action.payload.filter(user => user.userType === "Taşeron");
+        setUser: (state, action) => {
+            state.user = action.payload;
         },
-        setStaticUsers: (state) => {
-            state.allUsers = staticUsers;
-            state.supervisors = staticUsers.filter(user => user.userType === "Supervisor");
-            state.contractors = staticUsers.filter(user => user.userType === "Taşeron");
+        clearUser: (state) => {
+            state.user = null;
         }
     },
     extraReducers: (builder) => {
         builder
             .addCase(fetchAllUsers.pending, (state) => {
-                state.userStatus = 'loading';
+                state.status = 'loading';
+                state.error = null;
             })
             .addCase(fetchAllUsers.fulfilled, (state, action) => {
-                state.userStatus = 'succeeded';
-                if (Array.isArray(action.payload) && action.payload.length > 0) {
-                    state.allUsers = action.payload;
-                    state.supervisors = action.payload.filter(user => user.userType === "Supervisor");
-                    state.contractors = action.payload.filter(user => user.userType === "Taşeron");
-                } else {
-                    // API'den veri gelmezse statik verileri kullan
-                    state.allUsers = staticUsers;
-                    state.supervisors = staticUsers.filter(user => user.userType === "Supervisor");
-                    state.contractors = staticUsers.filter(user => user.userType === "Taşeron");
-                }
+                state.status = 'succeeded';
+                state.allUsers = action.payload;
+                state.supervisors = action.payload.filter(user => user.userType === "Supervisor");
+                state.contractors = action.payload.filter(user => user.userType === "Taşeron");
             })
             .addCase(fetchAllUsers.rejected, (state, action) => {
-                state.userStatus = 'failed';
+                state.status = 'failed';
                 state.error = action.payload;
-                // Hata durumunda statik verileri kullan
-                state.allUsers = staticUsers;
-                state.supervisors = staticUsers.filter(user => user.userType === "Supervisor");
-                state.contractors = staticUsers.filter(user => user.userType === "Taşeron");
+            })
+            .addCase(fetchUserList.pending, (state) => {
+                state.status = 'loading';
+                state.error = null;
+            })
+            .addCase(fetchUserList.fulfilled, (state, action) => {
+                state.status = 'succeeded';
+                state.userList = action.payload;
+            })
+            .addCase(fetchUserList.rejected, (state, action) => {
+                state.status = 'failed';
+                state.error = action.error.message;
             });
     }
 });
 
-
-
-export const { userLogin, userLogout, setAllUsers, setStaticUsers } = userSlice.actions;
+export const { userLogin, userLogout, setUser, clearUser } = userSlice.actions;
 export default userSlice.reducer;

@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, Table, Tag, Spin, message, Typography, Button, Modal, Form, Select, InputNumber, Divider } from 'antd';
 import { SwapOutlined, UserOutlined, ShoppingCartOutlined, RollbackOutlined, PlusOutlined, FileOutlined } from '@ant-design/icons';
 import api from '../utils/api';
 import { useSelector, useDispatch } from 'react-redux';
 import { fetchAllUsers } from '../redux/userSlice';
+import { fetchSystemData } from '../redux/systemSlice';
 import FileUpload from '../components/FileUpload';
 import cdnAdapter from '../utils/cdnAdapter';
 
@@ -20,20 +21,29 @@ const StockTransfer = () => {
     const [transferForm] = Form.useForm();
     const [refundForm] = Form.useForm();
     const dispatch = useDispatch();
-    const users = useSelector((state) => state.user.allUsers);
-    const userStatus = useSelector((state) => state.user.userStatus);
+    const { allUsers: users, userStatus } = useSelector((state) => state.user);
+    const { userList: systemUsers, status: systemStatus } = useSelector((state) => state.system);
     const [documentUrl, setDocumentUrl] = useState('');
     const [refundDocumentUrl, setRefundDocumentUrl] = useState('');
+    const [isAddModalVisible, setIsAddModalVisible] = useState(false);
+    const [newTransfer, setNewTransfer] = useState({
+        pozId: '',
+        amount: 0,
+        userId: ''
+    });
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                if (userStatus === 'idle') {
-                    await dispatch(fetchAllUsers()).unwrap();
+                setLoading(true);
+                if (systemStatus === 'idle') {
+                    await dispatch(fetchSystemData()).unwrap();
                 }
-                await fetchTransferData();
-                await fetchLocalStocks();
-                await fetchPozList();
+                await Promise.all([
+                    fetchTransferData(),
+                    fetchLocalStocks(),
+                    fetchPozList()
+                ]);
             } catch (error) {
                 console.error('Veriler yüklenirken hata:', error);
                 message.error('Veriler yüklenirken bir hata oluştu');
@@ -43,7 +53,25 @@ const StockTransfer = () => {
         };
 
         fetchData();
-    }, [dispatch, userStatus]);
+    }, [dispatch, systemStatus]);
+
+    useEffect(() => {
+        console.log('Redux States:', { 
+            users, 
+            userStatus, 
+            systemUsers, 
+            systemStatus 
+        });
+    }, [users, userStatus, systemUsers, systemStatus]);
+
+    const userOptions = useMemo(() => {
+        const allUsers = [...(users || []), ...(systemUsers || [])];
+        return allUsers.map(user => ({
+            key: user._id,
+            value: user._id,
+            label: user.fullName
+        }));
+    }, [users, systemUsers]);
 
     const fetchLocalStocks = async () => {
         try {
@@ -88,10 +116,9 @@ const StockTransfer = () => {
 
     const handleTransfer = async (values) => {
         try {
-            // Form değerlerini ve belge URL'sini bir araya getir
             const transferData = {
                 ...values,
-                documentUrl: documentUrl || null // Eğer documentUrl boşsa null olarak belirle
+                documentUrl: documentUrl || null
             };
             
             console.log('Transfer işlemi başlatılıyor...');
@@ -99,11 +126,9 @@ const StockTransfer = () => {
             console.log('Belge URL:', documentUrl);
             console.log('Gönderilecek veri:', transferData);
             
-            // API'ye POST isteği gönder
             const response = await api.post('/api/stock/transfer', transferData);
             console.log('Transfer yanıtı:', response.data);
             
-            // Başarılı işlem sonrası
             message.success('Stok transferi başarıyla gerçekleştirildi');
             setIsTransferModalVisible(false);
             transferForm.resetFields();
@@ -117,10 +142,9 @@ const StockTransfer = () => {
 
     const handleRefund = async (values) => {
         try {
-            // Form değerlerini ve belge URL'sini bir araya getir
             const refundData = {
                 ...values,
-                documentUrl: refundDocumentUrl || null // Eğer documentUrl boşsa null olarak belirle
+                documentUrl: refundDocumentUrl || null
             };
             
             console.log('İade işlemi başlatılıyor...');
@@ -128,11 +152,9 @@ const StockTransfer = () => {
             console.log('Belge URL:', refundDocumentUrl);
             console.log('Gönderilecek veri:', refundData);
             
-            // API'ye POST isteği gönder
             const response = await api.post('/api/stock/refund', refundData);
             console.log('İade yanıtı:', response.data);
             
-            // Başarılı işlem sonrası
             message.success('Stok iadesi başarıyla gerçekleştirildi');
             setIsRefundModalVisible(false);
             refundForm.resetFields();
@@ -141,6 +163,28 @@ const StockTransfer = () => {
         } catch (error) {
             console.error('İade hatası:', error);
             message.error(error.response?.data?.message || 'Stok iadesi sırasında bir hata oluştu');
+        }
+    };
+
+    const handleAddTransfer = async (values) => {
+        try {
+            console.log('Yeni transfer işlemi başlatılıyor...');
+            console.log('Form değerleri:', values);
+            
+            const response = await api.post('/api/stock/transfer', values);
+            console.log('Transfer yanıtı:', response.data);
+            
+            message.success('Stok transferi başarıyla gerçekleştirildi');
+            setIsAddModalVisible(false);
+            setNewTransfer({
+                pozId: '',
+                amount: 0,
+                userId: ''
+            });
+            fetchTransferData();
+        } catch (error) {
+            console.error('Transfer hatası:', error);
+            message.error(error.response?.data?.message || 'Stok transferi sırasında bir hata oluştu');
         }
     };
 
@@ -191,18 +235,21 @@ const StockTransfer = () => {
             title: 'Poz Kodu',
             dataIndex: ['poz', 'code'],
             key: 'code',
-            sorter: (a, b) => a.poz.code.localeCompare(b.poz.code),
+            sorter: (a, b) => (a.poz?.code || '').localeCompare(b.poz?.code || ''),
+            render: (_, record) => record.poz?.code || '-'
         },
         {
             title: 'Poz Adı',
             dataIndex: ['poz', 'name'],
             key: 'name',
-            sorter: (a, b) => a.poz.name.localeCompare(b.poz.name),
+            sorter: (a, b) => (a.poz?.name || '').localeCompare(b.poz?.name || ''),
+            render: (_, record) => record.poz?.name || '-'
         },
         {
             title: 'Birim',
             dataIndex: ['poz', 'unit'],
             key: 'unit',
+            render: (_, record) => record.poz?.unit || '-'
         },
         {
             title: 'Miktar',
@@ -219,18 +266,20 @@ const StockTransfer = () => {
             title: 'Birim Fiyat',
             dataIndex: ['poz', 'price'],
             key: 'price',
-            sorter: (a, b) => a.poz.price - b.poz.price,
-            render: (price) => (
-                <Text>{price.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</Text>
+            sorter: (a, b) => (a.poz?.price || 0) - (b.poz?.price || 0),
+            render: (_, record) => (
+                <Text>
+                    {(record.poz?.price || 0).toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
+                </Text>
             ),
         },
         {
             title: 'Toplam Değer',
             key: 'totalValue',
-            sorter: (a, b) => (a.amount * a.poz.price) - (b.amount * b.poz.price),
+            sorter: (a, b) => ((a.amount * (a.poz?.price || 0)) - (b.amount * (b.poz?.price || 0))),
             render: (_, record) => (
                 <Text>
-                    {(record.amount * record.poz.price).toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
+                    {(record.amount * (record.poz?.price || 0)).toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
                 </Text>
             ),
         },
@@ -241,17 +290,14 @@ const StockTransfer = () => {
             render: (url) => {
                 console.log('Belge URL değeri:', url, '(type:', typeof url, ')');
                 
-                // URL'nin varlığını kontrol et
                 if (!url || url === "undefined" || url === "null") {
                     return <Tag color="red">Belge Yok</Tag>;
                 }
                 
-                // URL'nin string tipinde olduğundan emin ol
                 const documentUrl = String(url);
                 console.log('String olarak URL:', documentUrl);
                 
                 try {
-                    // cdnAdapter ile tam URL oluştur
                     const fileUrl = cdnAdapter.getFileUrl(documentUrl);
                     console.log('Oluşturulan tam dosya URL:', fileUrl);
                     
@@ -318,79 +364,6 @@ const StockTransfer = () => {
                             >
                                 İade Gir
                             </Button>
-                            
-                            {/* Test butonu */}
-                            <Button 
-                                type="default"
-                                onClick={async () => {
-                                    try {
-                                        console.log("Test butonuna tıklandı, API çağrısı yapılıyor...");
-                                        const response = await api.get('/api/stock/test-log');
-                                        console.log("Test yanıtı:", response.data);
-                                        message.success("Test tamamlandı! Sunucu konsolu kontrol edilmeli.");
-                                    } catch (error) {
-                                        console.error("Test hatası:", error);
-                                        message.error("Test sırasında hata oluştu!");
-                                    }
-                                }}
-                            >
-                                Console Log Testi
-                            </Button>
-                            
-                            {/* Ana sunucu testi */}
-                            <Button 
-                                type="default"
-                                onClick={async () => {
-                                    try {
-                                        console.log("Ana sunucu test butonuna tıklandı");
-                                        const response = await fetch('http://localhost:9090/test-log');
-                                        const data = await response.json();
-                                        console.log("Ana test yanıtı:", data);
-                                        message.success("Ana sunucu testi tamamlandı!");
-                                    } catch (error) {
-                                        console.error("Ana test hatası:", error);
-                                        message.error("Ana sunucu testi sırasında hata oluştu!");
-                                    }
-                                }}
-                            >
-                                Ana Sunucu Testi
-                            </Button>
-                            
-                            {/* Özel test sunucusu */}
-                            <Button 
-                                type="primary"
-                                danger
-                                onClick={async () => {
-                                    try {
-                                        console.log("Özel test sunucusu butonuna tıklandı");
-                                        const response = await fetch('http://localhost:9091/hello');
-                                        const data = await response.json();
-                                        console.log("Özel test yanıtı:", data);
-                                        message.success("Özel test tamamlandı!");
-                                        
-                                        // POST isteği de deneyelim
-                                        console.log("POST isteği yapılıyor...");
-                                        const postResponse = await fetch('http://localhost:9091/test-post', {
-                                            method: 'POST',
-                                            headers: {
-                                                'Content-Type': 'application/json'
-                                            },
-                                            body: JSON.stringify({
-                                                test: true,
-                                                message: "Test verisi",
-                                                timestamp: new Date().toISOString()
-                                            })
-                                        });
-                                        const postData = await postResponse.json();
-                                        console.log("POST yanıtı:", postData);
-                                    } catch (error) {
-                                        console.error("Özel test hatası:", error);
-                                        message.error("Özel test sırasında hata oluştu!");
-                                    }
-                                }}
-                            >
-                                Özel Test Sunucusu
-                            </Button>
                         </div>
                     </div>
                 </div>
@@ -415,7 +388,6 @@ const StockTransfer = () => {
                 </Card>
             </div>
 
-            {/* Satın Alım Modalı */}
             <Modal
                 title={
                     <div className="flex items-center gap-2">
@@ -441,15 +413,17 @@ const StockTransfer = () => {
                         label="Transfer Edilecek Kullanıcı"
                         rules={[{ required: true, message: 'Lütfen kullanıcı seçin' }]}
                     >
-                        <Select placeholder="Kullanıcı seçin">
-                            {users && users.length > 0 ? (
-                                users.map(user => (
-                                    <Option key={user._id} value={user._id}>{user.fullName}</Option>
-                                ))
-                            ) : (
-                                <Option disabled>Kullanıcı listesi yükleniyor...</Option>
-                            )}
-                        </Select>
+                        <Select 
+                            placeholder="Kullanıcı seçin"
+                            showSearch
+                            loading={systemStatus === 'loading'}
+                            options={userOptions}
+                            filterOption={(input, option) => {
+                                const searchText = normalizeText(input);
+                                const optionText = normalizeText(`${option.label}`);
+                                return optionText.includes(searchText);
+                            }}
+                        />
                     </Form.Item>
 
                     <Form.Item
@@ -481,7 +455,7 @@ const StockTransfer = () => {
                         <FileUpload 
                             onSuccess={handleFileUploadSuccess} 
                             buttonText="Belge Yükle"
-                            maxFileSize={5} // 5MB
+                            maxFileSize={5}
                         />
                         {documentUrl && (
                             <div className="mt-2 text-green-500 text-sm">
@@ -505,7 +479,6 @@ const StockTransfer = () => {
                 </Form>
             </Modal>
 
-            {/* İade Modalı */}
             <Modal
                 title={
                     <div className="flex items-center gap-2">
@@ -531,15 +504,17 @@ const StockTransfer = () => {
                         label="İade Eden Kullanıcı"
                         rules={[{ required: true, message: 'Lütfen kullanıcı seçin' }]}
                     >
-                        <Select placeholder="Kullanıcı seçin">
-                            {users && users.length > 0 ? (
-                                users.map(user => (
-                                    <Option key={user._id} value={user._id}>{user.fullName}</Option>
-                                ))
-                            ) : (
-                                <Option disabled>Kullanıcı listesi yükleniyor...</Option>
-                            )}
-                        </Select>
+                        <Select 
+                            placeholder="Kullanıcı seçin"
+                            showSearch
+                            loading={systemStatus === 'loading'}
+                            options={userOptions}
+                            filterOption={(input, option) => {
+                                const searchText = normalizeText(input);
+                                const optionText = normalizeText(`${option.label}`);
+                                return optionText.includes(searchText);
+                            }}
+                        />
                     </Form.Item>
 
                     <Form.Item
@@ -571,7 +546,7 @@ const StockTransfer = () => {
                         <FileUpload 
                             onSuccess={handleRefundFileUploadSuccess} 
                             buttonText="Belge Yükle"
-                            maxFileSize={5} // 5MB
+                            maxFileSize={5}
                         />
                         {refundDocumentUrl && (
                             <div className="mt-2 text-green-500 text-sm">
@@ -593,6 +568,81 @@ const StockTransfer = () => {
                         </Button>
                     </div>
                 </Form>
+            </Modal>
+
+            <Modal
+                title={
+                    <div className="flex items-center gap-2">
+                        <SwapOutlined className="text-blue-500" />
+                        <span>Yeni Transfer</span>
+                    </div>
+                }
+                open={isAddModalVisible}
+                onOk={handleAddTransfer}
+                onCancel={() => {
+                    setIsAddModalVisible(false);
+                    setNewTransfer({
+                        pozId: '',
+                        amount: 0,
+                        userId: ''
+                    });
+                }}
+            >
+                <div className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Poz
+                        </label>
+                        <Select
+                            showSearch
+                            placeholder="Poz seçin"
+                            value={newTransfer.pozId}
+                            onChange={(value) => setNewTransfer({ ...newTransfer, pozId: value })}
+                            className="w-full"
+                            filterOption={(input, option) => {
+                                const searchText = normalizeText(input);
+                                const optionText = normalizeText(`${option.children}`);
+                                return optionText.includes(searchText);
+                            }}
+                        >
+                            {pozList.map(poz => (
+                                <Select.Option key={poz._id} value={poz._id}>
+                                    {poz.code} - {poz.name}
+                                </Select.Option>
+                            ))}
+                        </Select>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Transfer Edilecek Kullanıcı
+                        </label>
+                        <Select
+                            showSearch
+                            placeholder="Kullanıcı seçin"
+                            value={newTransfer.userId}
+                            onChange={(value) => setNewTransfer({ ...newTransfer, userId: value })}
+                            className="w-full"
+                            loading={systemStatus === 'loading'}
+                            options={userOptions}
+                            filterOption={(input, option) => {
+                                const searchText = normalizeText(input);
+                                const optionText = normalizeText(`${option.label}`);
+                                return optionText.includes(searchText);
+                            }}
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Miktar
+                        </label>
+                        <InputNumber
+                            value={newTransfer.amount}
+                            onChange={(value) => setNewTransfer({ ...newTransfer, amount: value })}
+                            min={1}
+                            className="w-full"
+                        />
+                    </div>
+                </div>
             </Modal>
         </div>
     );

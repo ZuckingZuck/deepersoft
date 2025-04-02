@@ -23,18 +23,6 @@ import SearchResults from "../pages/SearchResults";
 
 const AppRouter = () => {
   const user = useSelector((state) => state.user.user);
-  const fetchRequirements = async () => {
-    try {
-     const response = await api.get('/api/req/sys');
-     console.log(response.data); 
-    } catch (error) {
-      console.log(error);      
-    }
-  }
-
-  useEffect(() => {
-    fetchRequirements();
-  }, [])
   return (
     <Routes>
       {/* Genel Rotalar */}

@@ -18,41 +18,45 @@ const Login = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    setTimeout(() => setLogoVisible(true), 300);
-    setTimeout(() => setFormVisible(true), 600);
+    // Sadece bir kere çalışacak animasyonlar
+    const timer1 = setTimeout(() => setLogoVisible(true), 300);
+    const timer2 = setTimeout(() => setFormVisible(true), 600);
+
+    return () => {
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+    };
   }, []);
 
   const onFinish = async (values) => {
+    if (loading) return;
+    
     setLoading(true);
     setError(null);
+    
     try {
       const response = await api.post("/api/auth/login", values);
       
-      localStorage.setItem("token", response.data.token);
-      localStorage.setItem("user", JSON.stringify(response.data.user));
-      
-      dispatch(userLogin(response.data.user));
-      
-      message.success("Giriş başarılı! Yönlendiriliyorsunuz...");
-      
-      let dataLoadError = false;
-      try {
-        await dispatch(fetchAllUsers()).unwrap();
-        await dispatch(fetchAllClusters()).unwrap();
-      } catch (err) {
-        dataLoadError = true;
-        console.warn('Veri yüklenirken hata oluştu:', err);
-        message.warning('Bazı API verileri yüklenemedi. Proje oluşturma ekranı için API bağlantısının aktif olduğundan emin olun.');
-      }
-      
-      setTimeout(() => {
-        navigate("/");
-        if (dataLoadError) {
-          setTimeout(() => {
-            message.info('Veri yükleme hatası oluştu, lütfen API bağlantınızı kontrol edin.');
-          }, 500);
+      if (response.data.token) {
+        localStorage.setItem("token", response.data.token);
+        localStorage.setItem("user", JSON.stringify(response.data.user));
+        
+        await dispatch(userLogin(response.data.user));
+        
+        message.success("Giriş başarılı! Yönlendiriliyorsunuz...");
+        
+        try {
+          await Promise.all([
+            dispatch(fetchAllUsers()).unwrap(),
+            dispatch(fetchAllClusters()).unwrap()
+          ]);
+        } catch (err) {
+          console.warn('Veri yüklenirken hata oluştu:', err);
+          message.warning('Bazı API verileri yüklenemedi. Proje oluşturma ekranı için API bağlantısının aktif olduğundan emin olun.');
         }
-      }, 1000);
+        
+        navigate("/", { replace: true });
+      }
     } catch (error) {
       setError(
         error.response?.data?.message || "Giriş yapılırken bir hata oluştu."

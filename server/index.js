@@ -16,6 +16,8 @@ const pozRouter = require("./router/poz");
 const stockRouter = require("./router/stock");
 const reqRouter = require("./router/requirements");
 const reportRouter = require("./router/report");
+const contractorPozPriceRouter = require("./router/contractorPozPrice");
+
 app.use("/api/auth", authRouter);
 app.use("/api/definitions", definitionsRouter);
 app.use("/api/project", projectRouter);
@@ -23,6 +25,8 @@ app.use("/api/poz", pozRouter);
 app.use("/api/stock", stockRouter);
 app.use("/api/req", reqRouter);
 app.use("/api/report", reportRouter);
+app.use("/api/contractor-poz-price", contractorPozPriceRouter);
+
 mongoose
   .connect(connectionString)
   .then(() => {

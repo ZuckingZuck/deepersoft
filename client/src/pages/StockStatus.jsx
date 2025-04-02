@@ -48,7 +48,12 @@ const StockStatus = () => {
 
     const handleAddStock = async () => {
         try {
-            await api.post('/api/stock', newStock);
+            const stockData = {
+                poz: newStock.pozId,
+                amount: newStock.quantity
+            };
+            
+            await api.post('/api/stock/local', stockData);
             message.success('Stok başarıyla eklendi');
             setIsAddModalVisible(false);
             setNewStock({
@@ -58,7 +63,7 @@ const StockStatus = () => {
             fetchStockData();
         } catch (error) {
             console.error('Stok eklenirken hata:', error);
-            message.error('Stok eklenirken bir hata oluştu');
+            message.error(error.response?.data?.message || 'Stok eklenirken bir hata oluştu');
         }
     };
 

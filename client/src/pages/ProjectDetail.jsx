@@ -22,7 +22,8 @@ import {
   Modal,
   Select,
   Form,
-  Input as AntInput
+  Input as AntInput,
+  InputNumber
 } from 'antd';
 import { 
   ArrowLeftOutlined, 
@@ -98,6 +99,7 @@ const ProjectDetail = () => {
   const [noteModalVisible, setNoteModalVisible] = useState(false);
   const [noteForm] = Form.useForm();
   const [noteLoading, setNoteLoading] = useState(false);
+  const [isEditPozModalVisible, setIsEditPozModalVisible] = useState(false);
 
   // Yetki kontrolü
   const canEdit = user && (user.userType === 'Sistem Yetkilisi' || user.userType === 'Supervisor');
@@ -287,24 +289,30 @@ const ProjectDetail = () => {
 
   const handleAddPoz = async (pozData) => {
     try {
-      setIsAddingPoz(true);
-      const response = await api.post(`/api/project/poz/${id}`, {
-        poz: pozData.poz._id,
-        amount: pozData.amount
-      });
-      
-      if (response.data) {
-        message.success('Poz başarıyla eklendi');
-        // Pozları yeniden yükle
-        const updatedProject = await api.get(`/api/project/${id}`);
-        setPozes(updatedProject.data.pozes || []);
-      }
+        setIsAddingPoz(true);
+        
+        // Poz verilerini hazırla
+        const pozToAdd = {
+            projectId: id,
+            pozId: pozData.pozId,
+            amount: pozData.amount,
+            contractorPrice: pozData.contractorPrice,
+            status: 'Beklemede'
+        };
+
+        // Pozu ekle
+        const response = await api.post(`/api/project/poz/${id}`, pozToAdd);
+        
+        if (response.data) {
+            message.success('Poz başarıyla eklendi');
+            setIsAddPozModalOpen(false);
+            fetchProjectDetails(); // Proje detaylarını yeniden yükle
+        }
     } catch (error) {
-      console.error('Poz eklenirken hata:', error);
-      message.error('Poz eklenirken bir hata oluştu');
+        console.error('Poz eklenirken hata:', error);
+        message.error('Poz eklenirken bir hata oluştu');
     } finally {
-      setIsAddingPoz(false);
-      setIsAddPozModalOpen(false);
+        setIsAddingPoz(false);
     }
   };
 
@@ -412,128 +420,83 @@ const ProjectDetail = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-96">
-        <Spin size="large" tip="Proje detayları yükleniyor..." />
-      </div>
-    );
-  }
-
-  if (error || !project) {
-    return (
-      <div className="p-6 max-w-6xl mx-auto">
-        <Card className="shadow-md rounded-lg text-center py-12">
-          <ExclamationCircleOutlined style={{ fontSize: 64, color: '#ff4d4f' }} />
-          <Title level={3} className="mt-6">Proje Bulunamadı</Title>
-          <Text className="block mb-6">
-            {error || "İstediğiniz proje bulunamadı veya erişim izniniz yok."}
-          </Text>
-          <Button 
-            type="primary" 
-            icon={<ArrowLeftOutlined />} 
-            onClick={() => navigate('/projects')}
-          >
-            Projelere Dön
-          </Button>
-        </Card>
-      </div>
-    );
-  }
-
-  // Debug bilgileri
-  console.log("Proje:", project);
-  console.log("Supervisor:", project.supervisor, typeof project.supervisor);
-  console.log("Contractor:", project.contractor, typeof project.contractor);
-  console.log("Pozlar:", pozes);
-
-  // Poz tablosu sütunları
+  // Poz tablosu kolonları
   const pozColumns = [
     {
-      title: 'Poz Kodu',
-      dataIndex: ['poz', 'code'],
-      key: 'code',
-      render: (text, record) => (
-        <Tag color="blue">{text}</Tag>
-      )
+        title: 'Poz Kodu',
+        dataIndex: 'code',
+        key: 'code',
+        render: (text, record) => record.pozId?.code || '-'
     },
     {
-      title: 'Poz Adı',
-      dataIndex: ['poz', 'name'],
-      key: 'name',
+        title: 'Poz Adı',
+        dataIndex: 'name',
+        key: 'name',
+        render: (text, record) => record.pozId?.name || '-'
     },
     {
-      title: 'Birim',
-      dataIndex: ['poz', 'unit'],
-      key: 'unit',
-      render: (text) => (
-        <Tag color="cyan">{text}</Tag>
-      )
+        title: 'Miktar',
+        dataIndex: 'quantity',
+        key: 'quantity',
+        render: (text, record) => (record.quantity || 0).toLocaleString('tr-TR')
     },
     {
-      title: 'Fiyat Tipi',
-      dataIndex: ['poz', 'priceType'],
-      key: 'priceType',
-      render: (text) => (
-        <Tag color={text === 'M' ? 'orange' : 'green'}>
-          {text === 'M' ? 'Malzeme' : 'Servis'}
-        </Tag>
-      )
+        title: 'Birim',
+        dataIndex: 'unit',
+        key: 'unit',
+        render: (text, record) => record.pozId?.unit || '-'
     },
     {
-      title: 'Birim Fiyat',
-      dataIndex: ['poz', 'price'],
-      key: 'price',
-      render: (price) => (
-        <span className="font-medium">₺{price?.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</span>
-      )
+        title: 'Birim Fiyat',
+        dataIndex: 'price',
+        key: 'price',
+        render: (text, record) => {
+            const price = user.userType === 'Taşeron' ? record.contractorPrice : record.price;
+            return (price || 0).toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' });
+        }
     },
     {
-      title: 'Taşeron Fiyatı',
-      dataIndex: ['poz', 'contractorPrice'],
-      key: 'contractorPrice',
-      render: (price) => (
-        <span className="font-medium">₺{price?.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</span>
-      )
+        title: 'Toplam',
+        dataIndex: 'totalPrice',
+        key: 'totalPrice',
+        render: (text, record) => {
+            const price = user.userType === 'Taşeron' ? record.contractorPrice : record.price;
+            const total = (price || 0) * (record.quantity || 0);
+            return total.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' });
+        }
     },
+    ...(user.userType === 'Sistem Yetkilisi' ? [
+        {
+            title: 'Taşeron Fiyat',
+            dataIndex: 'contractorPrice',
+            key: 'contractorPrice',
+            render: (text, record) => (record.contractorPrice || 0).toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })
+        },
+        {
+            title: 'Taşeron Toplam',
+            dataIndex: 'contractorTotalPrice',
+            key: 'contractorTotalPrice',
+            render: (text, record) => {
+                const total = (record.contractorPrice || 0) * (record.quantity || 0);
+                return total.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' });
+            }
+        }
+    ] : []),
     {
-      title: 'Miktar',
-      dataIndex: 'amount',
-      key: 'amount',
-      render: (amount) => (
-        <Tag color="purple" className="text-center" style={{ minWidth: '60px' }}>
-          {amount}
-        </Tag>
-      )
-    },
-    {
-      title: 'Toplam',
-      key: 'total',
-      render: (_, record) => (
-        <span className="font-medium text-green-600">
-          ₺{(record.amount * record.poz.price)?.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
-        </span>
-      )
-    },
-    {
-      title: 'İşlem',
-      key: 'action',
-      render: (_, record) => {
-        console.log("Poz verisi:", record);
-        return (
-          <Button
-            type="text"
-            danger
-            icon={<DeleteOutlined />}
-            onClick={() => {
-              console.log("Silme butonuna tıklandı");
-              console.log("Silinecek poz ID:", record._id);
-              setSelectedPoz(record);
-              setDeleteModalVisible(true);
-            }}
-          />
-        );
-      }
+        title: 'İşlemler',
+        key: 'actions',
+        render: (text, record) => (
+            <Space>
+                <Button 
+                    type="link" 
+                    danger 
+                    onClick={() => handleDeletePoz(record._id)}
+                    icon={<DeleteOutlined />}
+                >
+                    Sil
+                </Button>
+            </Space>
+        )
     }
   ];
 
@@ -620,6 +583,127 @@ const ProjectDetail = () => {
     }
   ];
 
+  // Poz düzenleme modalı
+  const EditPozModal = () => {
+    const [form] = Form.useForm();
+    const { selectedPoz } = useSelector(state => state.project);
+
+    useEffect(() => {
+        if (selectedPoz) {
+            form.setFieldsValue({
+                quantity: selectedPoz.quantity,
+                status: selectedPoz.status,
+                notes: selectedPoz.notes
+            });
+        }
+    }, [selectedPoz, form]);
+
+    const handleSubmit = async (values) => {
+        try {
+            await api.put(`/api/project/poz/${selectedPoz._id}`, values);
+            message.success("Poz başarıyla güncellendi");
+            dispatch(fetchProjectDetail(projectId));
+            setIsEditPozModalVisible(false);
+        } catch (error) {
+            message.error("Poz güncellenirken bir hata oluştu");
+        }
+    };
+
+    return (
+        <Modal
+            title="Poz Düzenle"
+            open={isEditPozModalVisible}
+            onCancel={() => setIsEditPozModalVisible(false)}
+            footer={null}
+        >
+            <Form
+                form={form}
+                layout="vertical"
+                onFinish={handleSubmit}
+            >
+                <Form.Item
+                    name="quantity"
+                    label="Miktar"
+                    rules={[{ required: true, message: "Lütfen miktar giriniz" }]}
+                >
+                    <InputNumber 
+                        min={0} 
+                        style={{ width: '100%' }}
+                        formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                        parser={value => value.replace(/\$\s?|(,*)/g, '')}
+                    />
+                </Form.Item>
+
+                <Form.Item
+                    name="status"
+                    label="Durum"
+                    rules={[{ required: true, message: "Lütfen durum seçiniz" }]}
+                >
+                    <Select>
+                        <Option value="Beklemede">Beklemede</Option>
+                        <Option value="İşlemde">İşlemde</Option>
+                        <Option value="Tamamlandı">Tamamlandı</Option>
+                        <Option value="İptal">İptal</Option>
+                    </Select>
+                </Form.Item>
+
+                <Form.Item
+                    name="notes"
+                    label="Notlar"
+                >
+                    <Input.TextArea rows={4} />
+                </Form.Item>
+
+                <Form.Item>
+                    <Space>
+                        <Button type="primary" htmlType="submit">
+                            Kaydet
+                        </Button>
+                        <Button onClick={() => setIsEditPozModalVisible(false)}>
+                            İptal
+                        </Button>
+                    </Space>
+                </Form.Item>
+            </Form>
+        </Modal>
+    );
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-96">
+        <Spin size="large" tip="Proje detayları yükleniyor..." />
+      </div>
+    );
+  }
+
+  if (error || !project) {
+    return (
+      <div className="p-6 max-w-6xl mx-auto">
+        <Card className="shadow-md rounded-lg text-center py-12">
+          <ExclamationCircleOutlined style={{ fontSize: 64, color: '#ff4d4f' }} />
+          <Title level={3} className="mt-6">Proje Bulunamadı</Title>
+          <Text className="block mb-6">
+            {error || "İstediğiniz proje bulunamadı veya erişim izniniz yok."}
+          </Text>
+          <Button 
+            type="primary" 
+            icon={<ArrowLeftOutlined />} 
+            onClick={() => navigate('/projects')}
+          >
+            Projelere Dön
+          </Button>
+        </Card>
+      </div>
+    );
+  }
+
+  // Debug bilgileri
+  console.log("Proje:", project);
+  console.log("Supervisor:", project.supervisor, typeof project.supervisor);
+  console.log("Contractor:", project.contractor, typeof project.contractor);
+  console.log("Pozlar:", pozes);
+
   return (
     <div className="p-6 max-w-7xl mx-auto bg-gray-50 min-h-screen">
       <Card className="shadow-lg rounded-2xl border-0">
@@ -636,15 +720,6 @@ const ProjectDetail = () => {
             >
               Projelere Dön
             </Button>
-            {canEdit && (
-              <Button 
-                type="primary" 
-                icon={<EditOutlined />} 
-                onClick={() => navigate(`/projects/edit/${id}`)}
-              >
-                Düzenle
-              </Button>
-            )}
             {canChangeStatus && (
               <Button 
                 type="primary" 
@@ -775,36 +850,39 @@ const ProjectDetail = () => {
         <Card 
           title={<div className="flex items-center"><DatabaseOutlined className="mr-2" /> Poz Bilgileri</div>}
           className="shadow-md rounded-lg mb-6"
-          extra={
-            <Button 
-              type="primary" 
-              icon={<PlusOutlined />}
-              onClick={() => setIsAddPozModalOpen(true)}
-            >
-              Poz Ekle
-            </Button>
-          }
         >
-          {pozes && pozes.length > 0 ? (
-            <div className="overflow-x-auto">
-              <Table 
-                columns={pozColumns} 
-                dataSource={pozes} 
-                rowKey="_id"
-                pagination={false}
-              />
+          <div className="mt-8">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-2xl font-bold">Pozlar</h2>
+              <Button 
+                type="primary" 
+                onClick={() => setIsAddPozModalOpen(true)}
+                icon={<PlusOutlined />}
+              >
+                Poz Ekle
+              </Button>
             </div>
-          ) : (
-            <Empty 
-              image={Empty.PRESENTED_IMAGE_SIMPLE} 
-              description={
-                <div>
-                  <p className="text-lg mb-2">Poz bilgisi bulunamadı</p>
-                  <p className="text-gray-500">Bu projeye henüz poz bilgisi eklenmemiş.</p>
-                </div>
-              }
-            />
-          )}
+            {pozes && pozes.length > 0 ? (
+              <div className="overflow-x-auto">
+                <Table 
+                  columns={pozColumns} 
+                  dataSource={pozes} 
+                  rowKey="_id"
+                  pagination={false}
+                />
+              </div>
+            ) : (
+              <Empty 
+                image={Empty.PRESENTED_IMAGE_SIMPLE} 
+                description={
+                  <div>
+                    <p className="text-lg mb-2">Poz bilgisi bulunamadı</p>
+                    <p className="text-gray-500">Bu projeye henüz poz bilgisi eklenmemiş.</p>
+                  </div>
+                }
+              />
+            )}
+          </div>
         </Card>
 
         {/* Belgeler Bölümü */}

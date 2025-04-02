@@ -3,99 +3,50 @@ import { Card, Table, Button, message, Typography, Upload, Modal, Spin } from 'a
 import { UploadOutlined, DownloadOutlined, PlusOutlined } from '@ant-design/icons';
 import api from '../utils/api';
 import * as XLSX from 'xlsx';
+import { useSelector, useDispatch } from 'react-redux';
+import { fetchPozList } from '../redux/systemSlice';
+import AddPozModal from '../components/AddPozModal';
+import ImportContractorPrices from '../components/ImportContractorPrices';
+import ImportPozModal from '../components/ImportPozModal';
 
 const { Title, Text } = Typography;
 const { Dragger } = Upload;
 
 const PozList = () => {
-    const [loading, setLoading] = useState(true);
-    const [pozData, setPozData] = useState([]);
-    const [isImportModalVisible, setIsImportModalVisible] = useState(false);
+    const dispatch = useDispatch();
+    const { pozList, status } = useSelector(state => state.system);
+    const user = useSelector(state => state.user.user);
+    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+    const [isImportPozModalOpen, setIsImportPozModalOpen] = useState(false);
     const [importLoading, setImportLoading] = useState(false);
 
     useEffect(() => {
-        fetchPozData();
-    }, []);
+        dispatch(fetchPozList());
+    }, [dispatch]);
 
-    const fetchPozData = async () => {
+    const handleAddPoz = async (pozData) => {
         try {
-            const response = await api.get('/api/poz');
-            setPozData(response.data);
+            await dispatch(fetchPozList());
+            message.success('Poz başarıyla eklendi');
+            setIsAddModalOpen(false);
         } catch (error) {
-            console.error('Pozlar alınırken hata:', error);
-            message.error('Pozlar alınırken bir hata oluştu');
-        } finally {
-            setLoading(false);
+            message.error('Poz eklenirken bir hata oluştu');
         }
     };
 
-    const handleImport = async (file) => {
-        try {
-            setImportLoading(true);
-            const reader = new FileReader();
-            reader.onload = async (e) => {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
-                const sheetName = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[sheetName];
-                const jsonData = XLSX.utils.sheet_to_json(worksheet);
-
-                // Excel verilerini API formatına dönüştür
-                const formattedData = jsonData.map(row => {
-                    // Fiyat değerlerini sayıya çevir
-                    const price = typeof row['2025 REVİZE FİYAT'] === 'string' 
-                        ? parseFloat(row['2025 REVİZE FİYAT'].replace('₺', '').replace(',', '.'))
-                        : row['2025 REVİZE FİYAT'];
-
-                    const contractorPrice = typeof row['2025 TAŞERON FİYAT'] === 'string'
-                        ? parseFloat(row['2025 TAŞERON FİYAT'].replace('₺', '').replace(',', '.'))
-                        : row['2025 TAŞERON FİYAT'];
-
-                    return {
-                        code: row['Kalem Kodu'],
-                        name: row['İş Tipi Adı'],
-                        priceType: row['Fiyat Tipi'],
-                        price: isNaN(price) ? 0 : price,
-                        contractorPrice: isNaN(contractorPrice) ? 0 : contractorPrice
-                    };
-                });
-
-                // Verileri 100'er parça halinde gönder
-                const chunkSize = 100;
-                const chunks = [];
-                for (let i = 0; i < formattedData.length; i += chunkSize) {
-                    chunks.push(formattedData.slice(i, i + chunkSize));
-                }
-
-                // Her parçayı sırayla gönder
-                for (let i = 0; i < chunks.length; i++) {
-                    await api.post('/api/poz/bulk', { pozes: chunks[i] });
-                    // İlerleme durumunu göster
-                    message.loading(`Pozlar içe aktarılıyor... (${i + 1}/${chunks.length})`);
-                }
-
-                message.success('Pozlar başarıyla içe aktarıldı');
-                setIsImportModalVisible(false);
-                fetchPozData();
-            };
-            reader.readAsArrayBuffer(file);
-        } catch (error) {
-            console.error('Pozlar içe aktarılırken hata:', error);
-            message.error('Pozlar içe aktarılırken bir hata oluştu');
-        } finally {
-            setImportLoading(false);
-        }
+    const handleImportSuccess = () => {
+        message.success('Fiyatlar başarıyla içeri aktarıldı');
     };
 
     const handleExport = () => {
         try {
             // Verileri Excel formatına dönüştür
-            const exportData = pozData.map(poz => ({
+            const exportData = pozList.map(poz => ({
                 'Kalem Kodu': poz.code,
                 'İş Tipi Adı': poz.name,
                 'Fiyat Tipi': poz.priceType,
-                '2025 REVİZE FİYAT': poz.price.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' }),
-                '2025 TAŞERON FİYAT': poz.contractorPrice.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })
+                'Fiyat': poz.price.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })
             }));
 
             const ws = XLSX.utils.json_to_sheet(exportData);
@@ -130,26 +81,17 @@ const PozList = () => {
             key: 'priceType',
         },
         {
-            title: '2025 REVİZE FİYAT',
+            title: 'Fiyat',
             dataIndex: 'price',
             key: 'price',
             sorter: (a, b) => a.price - b.price,
             render: (price) => (
                 <Text>{price.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</Text>
             ),
-        },
-        {
-            title: '2025 TAŞERON FİYAT',
-            dataIndex: 'contractorPrice',
-            key: 'contractorPrice',
-            sorter: (a, b) => a.contractorPrice - b.contractorPrice,
-            render: (price) => (
-                <Text>{price.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</Text>
-            ),
         }
     ];
 
-    if (loading) {
+    if (status === 'loading') {
         return (
             <div className="p-6">
                 <Card>
@@ -176,14 +118,26 @@ const PozList = () => {
                             </div>
                         </div>
                         <div className="flex gap-3">
-                            <Button 
-                                type="primary"
-                                icon={<UploadOutlined />}
-                                onClick={() => setIsImportModalVisible(true)}
-                                className="bg-green-500 hover:bg-green-600"
-                            >
-                                Pozları İçe Aktar
-                            </Button>
+                            {user.userType === 'Sistem Yetkilisi' && (
+                                <>
+                                    <Button 
+                                        type="primary"
+                                        icon={<UploadOutlined />}
+                                        onClick={() => setIsImportModalOpen(true)}
+                                        className="bg-green-500 hover:bg-green-600"
+                                    >
+                                        Taşeron Fiyatlarını İçeri Aktar
+                                    </Button>
+                                    <Button 
+                                        type="primary"
+                                        icon={<UploadOutlined />}
+                                        onClick={() => setIsImportPozModalOpen(true)}
+                                        className="bg-blue-500 hover:bg-blue-600"
+                                    >
+                                        Pozları İçeri Aktar
+                                    </Button>
+                                </>
+                            )}
                             <Button 
                                 type="primary"
                                 icon={<DownloadOutlined />}
@@ -199,57 +153,37 @@ const PozList = () => {
                 <Card className="shadow-sm hover:shadow-md transition-shadow">
                     <Table
                         columns={columns}
-                        dataSource={pozData}
+                        dataSource={pozList}
                         rowKey="_id"
                         pagination={{
                             pageSize: 10,
                             showSizeChanger: true,
                             showTotal: (total) => `Toplam ${total} poz`
                         }}
+                        loading={status === 'loading'}
                     />
                 </Card>
             </div>
 
-            {/* İçe Aktarma Modalı */}
-            <Modal
-                title={
-                    <div className="flex items-center gap-2">
-                        <UploadOutlined className="text-green-500" />
-                        <span>Pozları İçe Aktar</span>
-                    </div>
-                }
-                open={isImportModalVisible}
-                onCancel={() => setIsImportModalVisible(false)}
-                footer={null}
-            >
-                {importLoading ? (
-                    <div className="text-center py-8">
-                        <Spin size="large" />
-                        <p className="mt-4 text-gray-600">Pozlar içe aktarılıyor, lütfen bekleyin...</p>
-                    </div>
-                ) : (
-                    <Dragger
-                        accept=".xlsx,.xls"
-                        beforeUpload={(file) => {
-                            handleImport(file);
-                            return false;
-                        }}
-                        showUploadList={false}
-                    >
-                        <p className="ant-upload-drag-icon">
-                            <UploadOutlined />
-                        </p>
-                        <p className="ant-upload-text">
-                            Excel dosyasını sürükleyip bırakın veya tıklayın
-                        </p>
-                        <p className="ant-upload-hint">
-                            Sadece .xlsx veya .xls formatında dosya yükleyin
-                        </p>
-                    </Dragger>
-                )}
-            </Modal>
+            <AddPozModal
+                isOpen={isAddModalOpen}
+                onClose={() => setIsAddModalOpen(false)}
+                onAdd={handleAddPoz}
+            />
+
+            <ImportContractorPrices
+                isOpen={isImportModalOpen}
+                onClose={() => setIsImportModalOpen(false)}
+                onSuccess={handleImportSuccess}
+            />
+
+            <ImportPozModal
+                isOpen={isImportPozModalOpen}
+                onClose={() => setIsImportPozModalOpen(false)}
+                onSuccess={handleImportSuccess}
+            />
         </div>
     );
 };
 
-export default PozList; 
+export default PozList;

@@ -58,7 +58,7 @@ const UserList = () => {
 
   const handleAddUser = async (values) => {
     try {
-      await api.post("/api/auth/register", values);
+      await api.post("/api/auth/createuser", values);
       message.success("Kullanıcı başarıyla eklendi");
       setIsModalVisible(false);
       form.resetFields();

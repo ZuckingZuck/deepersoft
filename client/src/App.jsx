@@ -3,20 +3,19 @@ import AppRouter from "./router/AppRouter";
 import Navbar from "./components/Navbar";
 import api from "./utils/api";
 import { useEffect } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import { fetchSystemData } from './redux/systemSlice';
 
 function App() {
-  const fetchRequirements = async () => {
-    try {
-     const response = await api.get('/api/req/sys');
-     console.log(response.data); 
-    } catch (error) {
-      console.log(error);      
-    }
-  }
+  const dispatch = useDispatch();
+  const user = useSelector((state) => state.user.user);
 
   useEffect(() => {
-    fetchRequirements();
-  }, [])
+    if(user) {
+      dispatch(fetchSystemData());
+    }
+  }, [user, dispatch]);
+
   return (
     <Router>
       <div>

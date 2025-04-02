@@ -20,7 +20,7 @@ router.post("/log/:id", AddProjectLog);
 router.delete("/log/:id", DeleteProjectLog);
 
 //Poz
-router.post("/poz/:id", AddProjectPoz);
+router.post("/poz/:projectId", AddProjectPoz);
 router.delete("/poz/:id", DeleteProjectPoz);
 
 //Document
