@@ -26,6 +26,7 @@ import {
   ProjectOutlined
 } from "@ant-design/icons";
 import api from "../utils/api";
+import { useSelector } from "react-redux";
 
 const { Title, Text } = Typography;
 const { TabPane } = Tabs;
@@ -71,6 +72,10 @@ const Projects = () => {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const user = useSelector((state) => state.user.user);
+
+  // Yetki kontrolü
+  const canCreateProject = user && (user.userType === 'Sistem Yetkilisi' || user.userType === 'Supervisor');
 
   useEffect(() => {
     const fetchProjects = async () => {
@@ -247,15 +252,17 @@ const Projects = () => {
             <ProjectOutlined className="text-2xl mr-3 text-blue-600" />
             <Title level={2} className="m-0">Projeler</Title>
           </div>
-          <Button 
-            type="primary" 
-            icon={<PlusOutlined />}
-            onClick={() => navigate('/projects/new')}
-            size="large"
-            className="bg-blue-500 hover:bg-blue-600"
-          >
-            Yeni Proje Ekle
-          </Button>
+          {canCreateProject && (
+            <Button 
+              type="primary" 
+              icon={<PlusOutlined />} 
+              onClick={() => navigate('/projects/new')}
+              size="large"
+              className="bg-blue-500 hover:bg-blue-600"
+            >
+              Yeni Proje Ekle
+            </Button>
+          )}
         </div>
 
         <Tabs 

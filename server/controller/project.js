@@ -9,6 +9,13 @@ const fetch = require('node-fetch');
 //Project
 const CreateProject = async (req, res) => {
     try {
+        const user = req.user;
+        
+        // Taşeron kullanıcılar proje oluşturamaz
+        if (user.userType === 'Taşeron') {
+            return res.status(403).json({ message: "Proje oluşturma yetkiniz yok" });
+        }
+
         const projectData = req.body;
         const newProject = new ProjectDB(projectData);
         await newProject.save();
@@ -23,27 +30,39 @@ const CreateProject = async (req, res) => {
 
 const GetProjects = async (req, res) => {
     try {
-        const { projectStatus } = req.query; // Query parametresinden status al
-        console.log("İstek geldi")
-        const filter = projectStatus ? { status: projectStatus } : {}; // Eğer varsa filtre uygula
+        const user = req.user;
+        const { projectStatus } = req.query;
+        console.log("İstek geldi");
+        
+        // Temel filtreyi oluştur
+        let filter = {};
+        
+        // Status filtresi varsa ekle
+        if (projectStatus) {
+            filter.status = projectStatus;
+        }
+        
+        // Taşeron kullanıcılar için sadece kendi projelerini göster
+        if (user && user.userType === 'Taşeron') {
+            filter.contractor = user._id;
+        }
+        
         console.log("Filtre:", filter);
         
-        // Mongoose'un kendi populate yöntemini kullanalım - daha güvenilir
         const projects = await ProjectDB.find(filter)
             .populate({
                 path: 'supervisor',
-                select: 'fullName email phone userType', // Gereken alanları seçelim
-                model: 'users' // Model adını belirtelim
+                select: 'fullName email phone userType',
+                model: 'users'
             })
             .populate({
                 path: 'contractor',
-                select: 'fullName email phone userType', // Gereken alanları seçelim
-                model: 'users' // Model adını belirtelim
+                select: 'fullName email phone userType',
+                model: 'users'
             });
         
         console.log("Bulunan projeler:", projects.length);
         
-        // İlk projenin supervisor ve contractor bilgilerini kontrol edelim
         if (projects.length > 0) {
             console.log("İlk proje supervisor:", projects[0].supervisor ? "Var" : "Yok");
             console.log("İlk proje contractor:", projects[0].contractor ? "Var" : "Yok");
@@ -59,6 +78,7 @@ const GetProjects = async (req, res) => {
 const GetProjectDetail = async (req, res) => {
     try {
         const { id } = req.params;
+        const user = req.user;
         
         // Mongoose'un kendi populate yöntemini kullanalım - daha güvenilir
         const project = await ProjectDB.findById(id)
@@ -68,6 +88,12 @@ const GetProjectDetail = async (req, res) => {
         if (!project) {
             return res.status(404).json({ message: "Proje bulunamadı." });
         }
+
+        // Yetki kontrolü
+        if (user.userType === 'Taşeron' && project.contractor._id.toString() !== user._id.toString()) {
+            return res.status(403).json({ message: "Bu projeye erişim yetkiniz yok" });
+        }
+
         console.log(project);
         // Populate durumunu kontrol edip logla
         console.log("Supervisor populate durumu:", project.supervisor ? "Başarılı" : "Başarısız");
@@ -106,10 +132,22 @@ const DeleteProject = async (req, res) => {
 const AddProjectLog = async (req, res) => {
     try {
         const user = req.user;
-        const { note } = req.body;
-        const id = req.params.id;
+        const project = await ProjectDB.findById(req.params.id);
 
-        const newProjectLog = new ProjectLogDB({ user: user._id, project: id, note: note });
+        if (!project) {
+            return res.status(404).json({ message: "Proje bulunamadı" });
+        }
+
+        // Yetki kontrolü
+        if (user.userType === 'Taşeron' && project.contractor.toString() !== user._id.toString()) {
+            return res.status(403).json({ message: "Bu projeye not ekleme yetkiniz yok" });
+        }
+
+        const newProjectLog = new ProjectLogDB({
+            user: user._id,
+            project: project._id,
+            note: req.body.note
+        });
         await newProjectLog.save();
         res.status(200).json(newProjectLog);
     } catch (error) {
@@ -135,20 +173,33 @@ const DeleteProjectLog = async (req, res) => {
 //Project Poz
 const AddProjectPoz = async (req, res) => {
     try {
-        const projectId = req.params.id;
         const user = req.user;
-        const { poz, amount } = req.body;
+        const project = await ProjectDB.findById(req.params.id);
 
-        const selectedPoz = await PozDB.findById(poz);
+        if (!project) {
+            return res.status(404).json({ message: "Proje bulunamadı" });
+        }
+
+        // Yetki kontrolü
+        if (user.userType === 'Taşeron' && project.contractor.toString() !== user._id.toString()) {
+            return res.status(403).json({ message: "Bu projeye poz ekleme yetkiniz yok" });
+        }
+
+        const selectedPoz = await PozDB.findById(req.body.poz);
         const userStock = await StockDB.findOne({ user: user._id, poz: selectedPoz._id });
 
-        const newProjectPoz = new ProjectPozDB({ project: projectId, user: user._id, poz, amount });
+        const newProjectPoz = new ProjectPozDB({ 
+            project: project._id, 
+            user: user._id, 
+            poz: req.body.poz, 
+            amount: req.body.amount 
+        });
 
         if (selectedPoz.priceType.includes("M")) {
             if (!userStock) {
-                await new StockDB({ user: user, poz, amount: amount * -1 }).save();
+                await new StockDB({ user: user, poz: req.body.poz, amount: req.body.amount * -1 }).save();
             } else {
-                userStock.amount -= amount;
+                userStock.amount -= req.body.amount;
                 await userStock.save();
             }
         }
@@ -163,23 +214,21 @@ const AddProjectPoz = async (req, res) => {
 
 const DeleteProjectPoz = async (req, res) => {
     try {
-        const { id } = req.params;
-        console.log("Silinecek poz ID:", id);
+        const user = req.user;
+        const projectPoz = await ProjectPozDB.findById(req.params.id)
+            .populate('project');
 
-        // Önce pozu bul
-        const projectPoz = await ProjectPozDB.findById(id).populate('poz');
         if (!projectPoz) {
             return res.status(404).json({ message: "Poz bulunamadı" });
         }
 
+        // Yetki kontrolü
+        if (user.userType === 'Taşeron' && projectPoz.project.contractor.toString() !== user._id.toString()) {
+            return res.status(403).json({ message: "Bu pozu silme yetkiniz yok" });
+        }
+
         // Eğer malzeme ise ve miktar varsa, stok işlemi yap
         if (projectPoz.poz.priceType.includes("M") && projectPoz.amount) {
-            // Projeyi bul
-            const project = await ProjectDB.findById(projectPoz.project);
-            if (!project) {
-                return res.status(404).json({ message: "Proje bulunamadı" });
-            }
-
             // Kullanıcının stoğunu bul
             const userStock = await StockDB.findOne({
                 user: projectPoz.user,
@@ -194,7 +243,7 @@ const DeleteProjectPoz = async (req, res) => {
             } else {
                 // Stok yoksa yeni stok oluştur
                 await StockDB.create({
-                    user: project.contractor,
+                    user: projectPoz.project.contractor,
                     poz: projectPoz.poz._id,
                     amount: projectPoz.amount
                 });
@@ -203,11 +252,7 @@ const DeleteProjectPoz = async (req, res) => {
         }
 
         // Pozu sil
-        const deletedPoz = await ProjectPozDB.findByIdAndDelete(id);
-        if (!deletedPoz) {
-            return res.status(404).json({ message: "Poz silinemedi" });
-        }
-
+        await ProjectPozDB.findByIdAndDelete(req.params.id);
         res.status(200).json({ message: "Poz başarıyla silindi" });
     } catch (error) {
         console.error("Poz silme hatası:", error);
@@ -232,36 +277,26 @@ const ChangeProjectStatus = async (req, res) => {
 // Project Documents
 const AddProjectDocument = async (req, res) => {
     try {
-        const { project, documentType, documentUrl } = req.body;
-        const user = req.user._id;
-        
-        if (!project || !documentType || !documentUrl) {
-            return res.status(400).json({ message: "Proje ID, belge türü ve belge URL'i gereklidir." });
+        const user = req.user;
+        const project = await ProjectDB.findById(req.body.project);
+
+        if (!project) {
+            return res.status(404).json({ message: "Proje bulunamadı" });
         }
-        
-        // Proje var mı kontrol et
-        const existingProject = await ProjectDB.findById(project);
-        if (!existingProject) {
-            return res.status(404).json({ message: "Proje bulunamadı." });
+
+        // Yetki kontrolü
+        if (user.userType === 'Taşeron' && project.contractor.toString() !== user._id.toString()) {
+            return res.status(403).json({ message: "Bu projeye belge ekleme yetkiniz yok" });
         }
-        
+
         const newDocument = new ProjectDocumentDB({
-            project,
-            user,
-            documentType,
-            documentUrl
+            project: project._id,
+            documentType: req.body.documentType,
+            documentUrl: req.body.documentUrl,
+            user: user._id
         });
-        
         await newDocument.save();
-        
-        // Proje logu ekle
-        const documentLogNote = `"${documentType}" belge tipinde yeni bir doküman eklendi.`;
-        await new ProjectLogDB({ user, project, note: documentLogNote }).save();
-        
-        res.status(201).json({
-            message: "Proje belgesi başarıyla eklendi",
-            document: newDocument
-        });
+        res.status(200).json(newDocument);
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: "Proje belgesi eklenirken bir hata oluştu." });
@@ -291,13 +326,19 @@ const GetProjectDocuments = async (req, res) => {
 
 const DeleteProjectDocument = async (req, res) => {
     try {
-        const documentId = req.params.id;
-        
-        const document = await ProjectDocumentDB.findById(documentId);
+        const user = req.user;
+        const document = await ProjectDocumentDB.findById(req.params.id)
+            .populate('project');
+
         if (!document) {
-            return res.status(404).json({ message: "Belge bulunamadı." });
+            return res.status(404).json({ message: "Belge bulunamadı" });
         }
-        
+
+        // Yetki kontrolü
+        if (user.userType === 'Taşeron' && document.project.contractor.toString() !== user._id.toString()) {
+            return res.status(403).json({ message: "Bu belgeyi silme yetkiniz yok" });
+        }
+
         // CDN'den dosyayı silme işlemi
         try {
             // Belgenin URL'inden dosya adını çıkar
@@ -326,13 +367,13 @@ const DeleteProjectDocument = async (req, res) => {
         }
         
         // Veritabanından belge kaydını sil
-        await ProjectDocumentDB.findByIdAndDelete(documentId);
+        await ProjectDocumentDB.findByIdAndDelete(req.params.id);
         
         // Proje logu ekle
         const documentLogNote = `"${document.documentType}" belge tipindeki doküman silindi.`;
         await new ProjectLogDB({ 
-            user: req.user._id, 
-            project: document.project, 
+            user: user._id, 
+            project: document.project._id, 
             note: documentLogNote 
         }).save();
         
@@ -343,8 +384,80 @@ const DeleteProjectDocument = async (req, res) => {
     }
 };
 
+// Proje detaylarını getir
+const GetProject = async (req, res) => {
+    try {
+        const user = req.user;
+        const project = await ProjectDB.findById(req.params.id)
+            .populate('contractor', 'fullName email phone userType')
+            .populate('supervisor', 'fullName email phone userType')
+            .lean();
+
+        if (!project) {
+            return res.status(404).json({ message: "Proje bulunamadı" });
+        }
+
+        // Yetki kontrolü
+        if (user.userType === 'Taşeron' && project.contractor._id.toString() !== user._id.toString()) {
+            return res.status(403).json({ message: "Bu projeye erişim yetkiniz yok" });
+        }
+
+        // Proje loglarını getir
+        const logs = await ProjectLogDB.find({ project: project._id })
+            .populate('user', 'fullName')
+            .sort({ createdAt: -1 })
+            .lean();
+
+        // Proje pozlarını getir
+        const pozes = await ProjectPozDB.find({ project: project._id })
+            .populate('poz')
+            .populate('user', 'fullName')
+            .lean();
+
+        // Proje belgelerini getir
+        const documents = await ProjectDocumentDB.find({ project: project._id })
+            .populate('user', 'fullName')
+            .sort({ createdAt: -1 })
+            .lean();
+
+        res.status(200).json({
+            project,
+            logs,
+            pozes,
+            documents
+        });
+    } catch (error) {
+        console.log(error);
+        res.status(500).json(error);
+    }
+};
+
+// Tüm projeleri getir
+const GetAllProjects = async (req, res) => {
+    try {
+        const user = req.user;
+        let query = {};
+
+        // Taşeron kullanıcılar sadece kendi projelerini görebilir
+        if (user.userType === 'Taşeron') {
+            query.contractor = user._id;
+        }
+
+        const projects = await ProjectDB.find(query)
+            .populate('contractor', 'fullName')
+            .populate('supervisor', 'fullName')
+            .sort({ createdAt: -1 })
+            .lean();
+
+        res.status(200).json(projects);
+    } catch (error) {
+        console.log(error);
+        res.status(500).json(error);
+    }
+};
+
 module.exports = { 
     CreateProject, GetProjects, GetProjectDetail, DeleteProject,
     AddProjectLog, DeleteProjectLog, AddProjectPoz, ChangeProjectStatus, DeleteProjectPoz,
-    AddProjectDocument, GetProjectDocuments, DeleteProjectDocument 
+    AddProjectDocument, GetProjectDocuments, DeleteProjectDocument, GetProject, GetAllProjects
 };

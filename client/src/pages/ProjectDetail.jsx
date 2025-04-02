@@ -99,6 +99,11 @@ const ProjectDetail = () => {
   const [noteForm] = Form.useForm();
   const [noteLoading, setNoteLoading] = useState(false);
 
+  // Yetki kontrolü
+  const canEdit = user && (user.userType === 'Sistem Yetkilisi' || user.userType === 'Supervisor');
+  const canChangeStatus = user && (user.userType === 'Sistem Yetkilisi' || user.userType === 'Supervisor');
+  const canAddNote = user && (user.userType === 'Sistem Yetkilisi' || user.userType === 'Supervisor' || user.userType === 'Taşeron');
+
   // Sistem verilerini yükle
   useEffect(() => {
     dispatch(fetchSystemData());
@@ -615,9 +620,6 @@ const ProjectDetail = () => {
     }
   ];
 
-  // Yetkili kullanıcı kontrolü
-  const canChangeStatus = user && (user.userType === 'Supervisor' || user.userType === 'Sistem Yetkilisi');
-
   return (
     <div className="p-6 max-w-6xl mx-auto">
       <div className="flex justify-between items-center mb-6">
@@ -633,13 +635,15 @@ const ProjectDetail = () => {
           >
             Projelere Dön
           </Button>
-          <Button 
-            type="primary" 
-            icon={<EditOutlined />} 
-            onClick={() => navigate(`/projects/edit/${id}`)}
-          >
-            Düzenle
-          </Button>
+          {canEdit && (
+            <Button 
+              type="primary" 
+              icon={<EditOutlined />} 
+              onClick={() => navigate(`/projects/edit/${id}`)}
+            >
+              Düzenle
+            </Button>
+          )}
           {canChangeStatus && (
             <Button 
               type="primary" 

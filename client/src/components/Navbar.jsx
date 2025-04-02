@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { userLogout } from "../redux/userSlice";
@@ -7,15 +7,16 @@ import {
   ProjectOutlined, 
   InboxOutlined, 
   AppstoreOutlined, 
-  SettingOutlined,
+  UserOutlined, 
   LogoutOutlined,
-  UserOutlined,
+  SettingOutlined,
   MenuOutlined,
   CloseOutlined,
   DownOutlined,
   TeamOutlined
 } from "@ant-design/icons";
 import { Button } from "antd";
+import api from '../utils/api';
 
 export default function Navbar() {
   const [openDropdown, setOpenDropdown] = useState(null);
@@ -25,10 +26,28 @@ export default function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const handleLogout = () => {
-    dispatch(userLogout());
-    localStorage.removeItem("token");
-    navigate("/login");
+  const handleLogout = async () => {
+    try {
+      // Önce Redux store'u temizle
+      dispatch(userLogout());
+      
+      // Local storage'ı temizle
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      
+      // API'ye çıkış isteği gönder
+      await api.post('/api/auth/logout');
+      
+      // Login sayfasına yönlendir
+      navigate('/login');
+    } catch (error) {
+      console.error('Çıkış yapılırken hata:', error);
+      // Hata olsa bile kullanıcıyı çıkış yaptır
+      dispatch(userLogout());
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      navigate('/login');
+    }
   };
 
   // Url değiştiğinde dropdown menüleri kapat
@@ -120,6 +139,13 @@ export default function Navbar() {
   // Kullanıcı girişi yoksa Navbar'ı gösterme
   if (!user) return null;
 
+  // Kullanıcı yetkisine göre menü öğelerini belirle
+  const isAdmin = user.userType === 'Sistem Yetkilisi' || user.userType === 'Supervisor';
+  
+  const filteredMenuItems = isAdmin ? menuItems : menuItems.filter(item => 
+    item.key === 'home' || item.key === 'projects'
+  );
+
   return (
     <nav className="bg-gradient-to-r from-gray-900 to-gray-800 text-white shadow-md">
       {/* Mobil hamburger menü */}
@@ -136,7 +162,7 @@ export default function Navbar() {
       {/* Mobil menü */}
       <div className={`md:hidden ${mobileMenuOpen ? 'block' : 'hidden'} border-t border-gray-700`}>
         <ul className="space-y-2 pb-3 pt-2">
-          {menuItems.map((item, index) => (
+          {filteredMenuItems.map((item, index) => (
             <li key={index} className="px-4">
               {item.dropdown ? (
                 <div>
@@ -212,7 +238,7 @@ export default function Navbar() {
         <div className="flex items-center space-x-1">
           <div className="font-bold text-xl mr-6">DeepSoft</div>
           <ul className="flex space-x-1">
-            {menuItems.map((item, index) => (
+            {filteredMenuItems.map((item, index) => (
               <li key={index} className="relative">
                 {item.dropdown ? (
                   <button

@@ -55,6 +55,9 @@ const Home = () => {
   const [recentProjects, setRecentProjects] = useState([]);
   const [projectsLoading, setProjectsLoading] = useState(true);
 
+  // Yetki kontrolü
+  const canCreateProject = user && (user.userType === 'Sistem Yetkilisi' || user.userType === 'Supervisor');
+
   useEffect(() => {
     const fetchStats = async () => {
       setLoading(true);
@@ -187,8 +190,11 @@ const Home = () => {
 
       {/* Son projeler */}
       <div className="mb-6">
+        <Title level={4} className="mb-4 flex items-center">
+          <ProjectOutlined className="mr-2" />
+          Son Projeler
+        </Title>
         <Card 
-          title={<div className="flex items-center"><ProjectOutlined className="mr-2" /> Son Projeler</div>}
           className="shadow-sm"
           bordered={false}
           style={{ borderRadius: '8px' }}

@@ -4,11 +4,11 @@ const { CreateProject, GetProjects, GetProjectDetail, DeleteProject, AddProjectL
 const requireAuth = require("../middleware/authControl"); 
 
 
-
+router.use(requireAuth);
 //Project
 router.get("/", GetProjects);
 router.get("/:id", GetProjectDetail);
-router.use(requireAuth);
+
 router.post("/", CreateProject);
 router.delete("/:id", DeleteProject);
 router.put("/status/:id", ChangeProjectStatus);
