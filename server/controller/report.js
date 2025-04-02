@@ -37,7 +37,7 @@ const GetProjectReport = async (req, res) => {
         
         // Excel dosyası oluştur
         if (req.query.format === 'excel') {
-            return await generateExcel(res, projects);
+            return await generateExcel(projects, res);
         }
         
         // Normal JSON yanıtı
@@ -60,7 +60,7 @@ const GetProjectReport = async (req, res) => {
  * @param {Object} res - HTTP yanıt nesnesi
  * @param {Array} projects - Proje verileri
  */
-const generateExcel = async (res, projects) => {
+const generateExcel = async (projects, res) => {
     // Excel çalışma kitabı oluştur
     const workbook = new exceljs.Workbook();
     const worksheet = workbook.addWorksheet('Projeler');
@@ -68,30 +68,30 @@ const generateExcel = async (res, projects) => {
     // Başlık satırı
     worksheet.columns = [
         { header: 'Proje Adı', key: 'name', width: 30 },
-        { header: 'Durum', key: 'status', width: 15 },
         { header: 'Şehir', key: 'city', width: 15 },
         { header: 'Alan Tipi', key: 'fieldType', width: 20 },
-        { header: 'Cluster Adı', key: 'clusterName', width: 20 },
-        { header: 'Alan Adı', key: 'fieldName', width: 20 },
+        { header: 'Küme', key: 'clusterName', width: 20 },
+        { header: 'Saha Adı', key: 'fieldName', width: 20 },
         { header: 'DDO', key: 'ddo', width: 15 },
-        { header: 'Tellcordia No', key: 'tellcordiaNo', width: 20 },
+        { header: 'Tellcordia No', key: 'tellcordiaNo', width: 15 },
         { header: 'LOC', key: 'loc', width: 15 },
         { header: 'SIR', key: 'sir', width: 15 },
-        { header: 'HomePass', key: 'homePass', width: 15 },
-        { header: 'Tarih', key: 'date', width: 15 },
+        { header: 'Home Pass', key: 'homePass', width: 15 },
+        { header: 'Proje Tarihi', key: 'date', width: 20 },
+        { header: 'Durum', key: 'status', width: 15 },
+        { header: 'Denetçi', key: 'supervisor', width: 25 },
         { header: 'Taşeron', key: 'contractor', width: 25 },
-        { header: 'Sorumlu', key: 'supervisor', width: 25 },
-        { header: 'IMLT', key: 'IMLT', width: 10 },
-        { header: 'AKTV', key: 'AKTV', width: 10 },
-        { header: 'ISLH', key: 'ISLH', width: 10 },
-        { header: 'HSRSZ', key: 'HSRSZ', width: 10 },
+        { header: 'İmalat', key: 'IMLT', width: 10 },
+        { header: 'Aktivasyon', key: 'AKTV', width: 10 },
+        { header: 'Islah', key: 'ISLH', width: 10 },
+        { header: 'Hasarsızlık', key: 'HSRSZ', width: 10 },
         { header: 'KMZ', key: 'KMZ', width: 10 },
         { header: 'OTDR', key: 'OTDR', width: 10 },
-        { header: 'MTBKT', key: 'MTBKT', width: 10 },
-        { header: 'KSF', key: 'KSF', width: 10 },
-        { header: 'BRKD', key: 'BRKD', width: 10 },
+        { header: 'Mutabakat', key: 'MTBKT', width: 10 },
+        { header: 'Keşif', key: 'KSF', width: 10 },
+        { header: 'Barkod', key: 'BRKD', width: 10 },
         { header: 'Oluşturulma Tarihi', key: 'createdAt', width: 20 },
-        { header: 'Güncellenme Tarihi', key: 'updatedAt', width: 20 }
+        { header: 'Son Güncelleme', key: 'updatedAt', width: 20 }
     ];
     
     // Başlık satırını kalın yap
@@ -99,27 +99,33 @@ const generateExcel = async (res, projects) => {
     
     // Verileri ekle
     projects.forEach(project => {
-        // Referans edilen alanları düzenle
-        const formattedProject = {
-            ...project,
-            contractor: project.contractor ? project.contractor.fullName : '',
-            supervisor: project.supervisor ? project.supervisor.fullName : '',
-            date: project.date ? new Date(project.date).toLocaleDateString('tr-TR') : '',
-            createdAt: project.createdAt ? new Date(project.createdAt).toLocaleDateString('tr-TR') : '',
-            updatedAt: project.updatedAt ? new Date(project.updatedAt).toLocaleDateString('tr-TR') : '',
-            // Boolean değerleri Evet/Hayır olarak göster
-            IMLT: project.IMLT ? 'Evet' : 'Hayır',
-            AKTV: project.AKTV ? 'Evet' : 'Hayır',
-            ISLH: project.ISLH ? 'Evet' : 'Hayır',
-            HSRSZ: project.HSRSZ ? 'Evet' : 'Hayır',
-            KMZ: project.KMZ ? 'Evet' : 'Hayır',
-            OTDR: project.OTDR ? 'Evet' : 'Hayır',
-            MTBKT: project.MTBKT ? 'Evet' : 'Hayır',
-            KSF: project.KSF ? 'Evet' : 'Hayır',
-            BRKD: project.BRKD ? 'Evet' : 'Hayır'
-        };
-        
-        worksheet.addRow(formattedProject);
+        worksheet.addRow({
+            name: project.name,
+            city: project.city,
+            fieldType: project.fieldType,
+            clusterName: project.clusterName,
+            fieldName: project.fieldName,
+            ddo: project.ddo,
+            tellcordiaNo: project.tellcordiaNo,
+            loc: project.loc || '-',
+            sir: project.sir || '-',
+            homePass: project.homePass,
+            date: project.date ? new Date(project.date).toLocaleDateString('tr-TR') : '-',
+            status: project.status,
+            supervisor: project.supervisor?.fullName || '-',
+            contractor: project.contractor?.fullName || '-',
+            IMLT: project.IMLT ? '✓' : '✗',
+            AKTV: project.AKTV ? '✓' : '✗',
+            ISLH: project.ISLH ? '✓' : '✗',
+            HSRSZ: project.HSRSZ ? '✓' : '✗',
+            KMZ: project.KMZ ? '✓' : '✗',
+            OTDR: project.OTDR ? '✓' : '✗',
+            MTBKT: project.MTBKT ? '✓' : '✗',
+            KSF: project.KSF ? '✓' : '✗',
+            BRKD: project.BRKD ? '✓' : '✗',
+            createdAt: project.createdAt ? new Date(project.createdAt).toLocaleDateString('tr-TR') : '-',
+            updatedAt: project.updatedAt ? new Date(project.updatedAt).toLocaleDateString('tr-TR') : '-'
+        });
     });
     
     // Tüm hücrelere sınır ekle
@@ -206,13 +212,13 @@ const GetProjectPozReport = async (req, res) => {
         const projectPozes = await ProjectPozDB.find({ project: { $in: projectIds } })
             .populate({
                 path: 'project',
-                select: 'name status city fieldType clusterName fieldName ddo tellcordiaNo homePass date',
+                select: 'name status city fieldType clusterName fieldName ddo tellcordiaNo homePass date IMLT AKTV ISLH HSRSZ KMZ OTDR MTBKT KSF BRKD loc sir',
                 populate: [
                     { path: 'contractor', select: 'fullName' },
                     { path: 'supervisor', select: 'fullName' }
                 ]
             })
-            .populate('poz', 'code name price priceType unit')
+            .populate('poz', 'code name price priceType unit contractorPrice')
             .populate('user', 'fullName')
             .lean();
             
@@ -220,7 +226,7 @@ const GetProjectPozReport = async (req, res) => {
         
         // Excel dosyası oluştur
         if (req.query.format === 'excel') {
-            return await generatePozExcel(res, projectPozes);
+            return await generatePozExcel(projectPozes, res);
         }
         
         // Normal JSON yanıtı
@@ -243,33 +249,46 @@ const GetProjectPozReport = async (req, res) => {
  * @param {Object} res - HTTP yanıt nesnesi
  * @param {Array} projectPozes - Poz verileri
  */
-const generatePozExcel = async (res, projectPozes) => {
+const generatePozExcel = async (projectPozes, res) => {
     // Excel çalışma kitabı oluştur
     const workbook = new exceljs.Workbook();
-    const worksheet = workbook.addWorksheet('Proje Pozları');
+    const worksheet = workbook.addWorksheet('Poz Raporu');
     
     // Başlık satırı
     worksheet.columns = [
         { header: 'Proje Adı', key: 'projectName', width: 30 },
-        { header: 'Proje Durumu', key: 'projectStatus', width: 15 },
         { header: 'Şehir', key: 'city', width: 15 },
         { header: 'Alan Tipi', key: 'fieldType', width: 20 },
-        { header: 'Cluster Adı', key: 'clusterName', width: 20 },
-        { header: 'Alan Adı', key: 'fieldName', width: 20 },
+        { header: 'Küme', key: 'clusterName', width: 20 },
+        { header: 'Saha Adı', key: 'fieldName', width: 20 },
         { header: 'DDO', key: 'ddo', width: 15 },
-        { header: 'Tellcordia No', key: 'tellcordiaNo', width: 20 },
-        { header: 'HomePass', key: 'homePass', width: 15 },
-        { header: 'Proje Tarihi', key: 'projectDate', width: 15 },
+        { header: 'Tellcordia No', key: 'tellcordiaNo', width: 15 },
+        { header: 'LOC', key: 'loc', width: 15 },
+        { header: 'SIR', key: 'sir', width: 15 },
+        { header: 'Home Pass', key: 'homePass', width: 15 },
+        { header: 'Proje Tarihi', key: 'date', width: 20 },
+        { header: 'Durum', key: 'status', width: 15 },
+        { header: 'Denetçi', key: 'supervisor', width: 25 },
         { header: 'Taşeron', key: 'contractor', width: 25 },
-        { header: 'Sorumlu', key: 'supervisor', width: 25 },
+        { header: 'İmalat', key: 'IMLT', width: 10 },
+        { header: 'Aktivasyon', key: 'AKTV', width: 10 },
+        { header: 'Islah', key: 'ISLH', width: 10 },
+        { header: 'Hasarsızlık', key: 'HSRSZ', width: 10 },
+        { header: 'KMZ', key: 'KMZ', width: 10 },
+        { header: 'OTDR', key: 'OTDR', width: 10 },
+        { header: 'Mutabakat', key: 'MTBKT', width: 10 },
+        { header: 'Keşif', key: 'KSF', width: 10 },
+        { header: 'Barkod', key: 'BRKD', width: 10 },
         { header: 'Poz Kodu', key: 'pozCode', width: 15 },
         { header: 'Poz Adı', key: 'pozName', width: 30 },
-        { header: 'Poz Fiyatı', key: 'pozPrice', width: 15 },
-        { header: 'Poz Tipi', key: 'pozType', width: 15 },
         { header: 'Birim', key: 'unit', width: 10 },
+        { header: 'Fiyat Tipi', key: 'priceType', width: 15 },
+        { header: 'Birim Fiyat', key: 'price', width: 15 },
+        { header: 'Taşeron Fiyatı', key: 'contractorPrice', width: 15 },
         { header: 'Miktar', key: 'amount', width: 10 },
-        { header: 'Toplam Tutar', key: 'totalPrice', width: 15 },
-        { header: 'Ekleyen Kişi', key: 'userFullName', width: 25 },
+        { header: 'Toplam Fiyat', key: 'totalPrice', width: 15 },
+        { header: 'Taşeron Toplam', key: 'contractorTotal', width: 15 },
+        { header: 'Ekleyen Kullanıcı', key: 'addedBy', width: 25 },
         { header: 'Eklenme Tarihi', key: 'createdAt', width: 20 }
     ];
     
@@ -278,32 +297,48 @@ const generatePozExcel = async (res, projectPozes) => {
     
     // Verileri ekle
     projectPozes.forEach(poz => {
-        // Veriyi düzenle
-        const formattedPoz = {
+        const amount = poz.amount || 0;
+        const price = poz.poz?.price || 0;
+        const contractorPrice = poz.poz?.contractorPrice || 0;
+        const totalPrice = amount * price;
+        const contractorTotal = amount * contractorPrice;
+
+        worksheet.addRow({
             projectName: poz.project?.name || '',
-            projectStatus: poz.project?.status || '',
             city: poz.project?.city || '',
             fieldType: poz.project?.fieldType || '',
             clusterName: poz.project?.clusterName || '',
             fieldName: poz.project?.fieldName || '',
             ddo: poz.project?.ddo || '',
             tellcordiaNo: poz.project?.tellcordiaNo || '',
+            loc: poz.project?.loc || '-',
+            sir: poz.project?.sir || '-',
             homePass: poz.project?.homePass || '',
-            projectDate: poz.project?.date ? new Date(poz.project.date).toLocaleDateString('tr-TR') : '',
-            contractor: poz.project?.contractor?.fullName || '',
-            supervisor: poz.project?.supervisor?.fullName || '',
+            date: poz.project?.date ? new Date(poz.project.date).toLocaleDateString('tr-TR') : '-',
+            status: poz.project?.status || '',
+            supervisor: poz.project?.supervisor?.fullName || '-',
+            contractor: poz.project?.contractor?.fullName || '-',
+            IMLT: poz.project?.IMLT ? '✓' : '✗',
+            AKTV: poz.project?.AKTV ? '✓' : '✗',
+            ISLH: poz.project?.ISLH ? '✓' : '✗',
+            HSRSZ: poz.project?.HSRSZ ? '✓' : '✗',
+            KMZ: poz.project?.KMZ ? '✓' : '✗',
+            OTDR: poz.project?.OTDR ? '✓' : '✗',
+            MTBKT: poz.project?.MTBKT ? '✓' : '✗',
+            KSF: poz.project?.KSF ? '✓' : '✗',
+            BRKD: poz.project?.BRKD ? '✓' : '✗',
             pozCode: poz.poz?.code || '',
             pozName: poz.poz?.name || '',
-            pozPrice: poz.poz?.price || 0,
-            pozType: poz.poz?.priceType || '',
-            unit: poz.poz?.unit || poz.unit || '',
-            amount: poz.amount || 0,
-            totalPrice: (poz.amount || 0) * (poz.poz?.price || 0),
-            userFullName: poz.user?.fullName || '',
-            createdAt: poz.createdAt ? new Date(poz.createdAt).toLocaleDateString('tr-TR') : ''
-        };
-        
-        worksheet.addRow(formattedPoz);
+            unit: poz.poz?.unit || '',
+            priceType: poz.poz?.priceType === 'M' ? 'Malzeme' : 'Servis',
+            price: price,
+            contractorPrice: contractorPrice,
+            amount: amount,
+            totalPrice: totalPrice,
+            contractorTotal: contractorTotal,
+            addedBy: poz.user?.fullName || '-',
+            createdAt: poz.createdAt ? new Date(poz.createdAt).toLocaleDateString('tr-TR') : '-'
+        });
     });
     
     // Tüm hücrelere sınır ekle
@@ -319,8 +354,10 @@ const generatePozExcel = async (res, projectPozes) => {
     });
     
     // Sayısal sütunları para birimi olarak formatla
-    worksheet.getColumn('pozPrice').numFmt = '#,##0.00 ₺';
+    worksheet.getColumn('price').numFmt = '#,##0.00 ₺';
+    worksheet.getColumn('contractorPrice').numFmt = '#,##0.00 ₺';
     worksheet.getColumn('totalPrice').numFmt = '#,##0.00 ₺';
+    worksheet.getColumn('contractorTotal').numFmt = '#,##0.00 ₺';
     
     // Başlık satırını renklendir
     worksheet.getRow(1).fill = {

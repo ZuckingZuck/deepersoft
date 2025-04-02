@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { fetchSystemData } from '../redux/systemSlice';
 import { 
   Card, 
@@ -20,7 +20,9 @@ import {
   Avatar,
   Tooltip,
   Modal,
-  Select
+  Select,
+  Form,
+  Input as AntInput
 } from 'antd';
 import { 
   ArrowLeftOutlined, 
@@ -47,7 +49,9 @@ import {
   MailOutlined,
   WarningOutlined,
   PlusOutlined,
-  FileOutlined
+  FileOutlined,
+  UploadOutlined,
+  ReloadOutlined
 } from '@ant-design/icons';
 import api from '../utils/api';
 import AddPozModal from '../components/AddPozModal';
@@ -72,6 +76,7 @@ const ProjectDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const user = useSelector((state) => state.user.user);
   const [project, setProject] = useState(null);
   const [logs, setLogs] = useState([]);
   const [pozes, setPozes] = useState([]);
@@ -87,6 +92,12 @@ const ProjectDetail = () => {
   const [documentType, setDocumentType] = useState('');
   const [documentUrl, setDocumentUrl] = useState('');
   const [loadingDocuments, setLoadingDocuments] = useState(false);
+  const [statusModalVisible, setStatusModalVisible] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState('');
+  const [statusLoading, setStatusLoading] = useState(false);
+  const [noteModalVisible, setNoteModalVisible] = useState(false);
+  const [noteForm] = Form.useForm();
+  const [noteLoading, setNoteLoading] = useState(false);
 
   // Sistem verilerini yükle
   useEffect(() => {
@@ -340,6 +351,62 @@ const ProjectDetail = () => {
     }
   };
 
+  // Statüs seçenekleri
+  const statusOptions = [
+    { value: 'İşlemde', label: 'İşlemde' },
+    { value: 'Onayda', label: 'Onayda' },
+    { value: 'İncelendi', label: 'İncelendi' },
+    { value: 'Montaj Tamam', label: 'Montaj Tamam' },
+    { value: 'Tamamlandı', label: 'Tamamlandı' },
+    { value: 'Islah ve Düzenleme', label: 'Islah ve Düzenleme' },
+    { value: 'Beklemede', label: 'Beklemede' },
+    { value: 'Arşivde', label: 'Arşivde' }
+  ];
+
+  const handleStatusChange = async () => {
+    if (!selectedStatus) {
+      message.error('Lütfen bir durum seçin');
+      return;
+    }
+
+    setStatusLoading(true);
+    try {
+      await api.put(`/api/project/status/${id}`, { status: selectedStatus });
+      message.success('Proje durumu başarıyla güncellendi');
+      setStatusModalVisible(false);
+      setSelectedStatus('');
+      fetchProjectDetails();
+    } catch (error) {
+      console.error('Durum güncellenirken hata:', error);
+      message.error('Durum güncellenirken bir hata oluştu');
+    } finally {
+      setStatusLoading(false);
+    }
+  };
+
+  // Not ekleme fonksiyonu
+  const handleAddNote = async (values) => {
+    try {
+      setNoteLoading(true);
+      const response = await api.post(`/api/project/log/${id}`, {
+        note: values.note
+      });
+      
+      if (response.status === 200) {
+        message.success('Not başarıyla eklendi');
+        setNoteModalVisible(false);
+        noteForm.resetFields();
+        // Proje detaylarını yeniden yükle
+        fetchProjectDetails();
+      }
+    } catch (error) {
+      console.error('Not ekleme hatası:', error);
+      message.error('Not eklenirken bir hata oluştu');
+    } finally {
+      setNoteLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-96">
@@ -548,6 +615,9 @@ const ProjectDetail = () => {
     }
   ];
 
+  // Yetkili kullanıcı kontrolü
+  const canChangeStatus = user && (user.userType === 'Supervisor' || user.userType === 'Sistem Yetkilisi');
+
   return (
     <div className="p-6 max-w-6xl mx-auto">
       <div className="flex justify-between items-center mb-6">
@@ -570,6 +640,17 @@ const ProjectDetail = () => {
           >
             Düzenle
           </Button>
+          {canChangeStatus && (
+            <Button 
+              type="primary" 
+              onClick={() => {
+                setSelectedStatus(project.status);
+                setStatusModalVisible(true);
+              }}
+            >
+              Durum Değiştir
+            </Button>
+          )}
         </Space>
       </div>
 
@@ -796,6 +877,56 @@ const ProjectDetail = () => {
         )}
       </Card>
 
+      {/* Not Ekleme Butonu */}
+      <div className="mb-4">
+        <Button 
+          type="primary" 
+          onClick={() => setNoteModalVisible(true)}
+          icon={<PlusOutlined />}
+        >
+          Not Ekle
+        </Button>
+      </div>
+
+      {/* Not Ekleme Modalı */}
+      <Modal
+        title="Projeye Not Ekle"
+        open={noteModalVisible}
+        onCancel={() => setNoteModalVisible(false)}
+        footer={null}
+      >
+        <Form
+          form={noteForm}
+          onFinish={handleAddNote}
+          layout="vertical"
+        >
+          <Form.Item
+            name="note"
+            label="Not"
+            rules={[{ required: true, message: 'Lütfen bir not girin' }]}
+          >
+            <AntInput.TextArea 
+              rows={4} 
+              placeholder="Notunuzu buraya yazın..."
+            />
+          </Form.Item>
+          <Form.Item>
+            <Space>
+              <Button 
+                type="primary" 
+                htmlType="submit" 
+                loading={noteLoading}
+              >
+                Kaydet
+              </Button>
+              <Button onClick={() => setNoteModalVisible(false)}>
+                İptal
+              </Button>
+            </Space>
+          </Form.Item>
+        </Form>
+      </Modal>
+
       <AddPozModal
         isOpen={isAddPozModalOpen}
         onClose={() => {
@@ -892,6 +1023,28 @@ const ProjectDetail = () => {
             </div>
           )}
         </div>
+      </Modal>
+
+      <Modal
+        title="Proje Durumu Değiştir"
+        open={statusModalVisible}
+        onOk={handleStatusChange}
+        onCancel={() => {
+          setStatusModalVisible(false);
+          setSelectedStatus('');
+        }}
+        confirmLoading={statusLoading}
+      >
+        <Form layout="vertical">
+          <Form.Item label="Yeni Durum" required>
+            <Select
+              value={selectedStatus}
+              onChange={setSelectedStatus}
+              placeholder="Durum seçin"
+              options={statusOptions}
+            />
+          </Form.Item>
+        </Form>
       </Modal>
     </div>
   );
