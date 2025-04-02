@@ -156,7 +156,7 @@ const Status = () => {
                 <Badge 
                   count={status.count} 
                   overflowCount={99} 
-                  offset={[-5, 5]}
+                  offset={[-10, -10]}
                 >
                   <div className={`flex flex-col items-center justify-center p-4 ${status.bgColor} rounded-lg hover:shadow-md transition-all duration-300 border border-transparent hover:border-gray-200 h-full aspect-[4/3]`}>
                     <div className={`text-3xl ${status.iconColor} mb-3`}>

@@ -621,435 +621,437 @@ const ProjectDetail = () => {
   ];
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
-      <div className="flex justify-between items-center mb-6">
-        <div className="flex items-center">
-          <ProjectOutlined className="text-2xl mr-3 text-blue-600" />
-          <Title level={2} className="m-0">Proje Detayları</Title>
+    <div className="p-6 max-w-7xl mx-auto bg-gray-50 min-h-screen">
+      <Card className="shadow-lg rounded-2xl border-0">
+        <div className="flex justify-between items-center mb-6">
+          <div className="flex items-center">
+            <ProjectOutlined className="text-2xl mr-3 text-blue-600" />
+            <Title level={2} className="m-0">Proje Detayları</Title>
+          </div>
+          <Space>
+            <Button 
+              type="default" 
+              icon={<ArrowLeftOutlined />} 
+              onClick={() => navigate('/projects')}
+            >
+              Projelere Dön
+            </Button>
+            {canEdit && (
+              <Button 
+                type="primary" 
+                icon={<EditOutlined />} 
+                onClick={() => navigate(`/projects/edit/${id}`)}
+              >
+                Düzenle
+              </Button>
+            )}
+            {canChangeStatus && (
+              <Button 
+                type="primary" 
+                onClick={() => {
+                  setSelectedStatus(project.status);
+                  setStatusModalVisible(true);
+                }}
+              >
+                Durum Değiştir
+              </Button>
+            )}
+          </Space>
         </div>
-        <Space>
-          <Button 
-            type="default" 
-            icon={<ArrowLeftOutlined />} 
-            onClick={() => navigate('/projects')}
-          >
-            Projelere Dön
-          </Button>
-          {canEdit && (
-            <Button 
-              type="primary" 
-              icon={<EditOutlined />} 
-              onClick={() => navigate(`/projects/edit/${id}`)}
-            >
-              Düzenle
-            </Button>
-          )}
-          {canChangeStatus && (
-            <Button 
-              type="primary" 
-              onClick={() => {
-                setSelectedStatus(project.status);
-                setStatusModalVisible(true);
-              }}
-            >
-              Durum Değiştir
-            </Button>
-          )}
-        </Space>
-      </div>
 
-      {/* Ana proje bilgileri kartı */}
-      <Card className="shadow-md rounded-lg mb-6">
-        <div className="mb-4 flex justify-between items-start">
-          <div>
-            <Title level={3} className="mb-1">{project.name || "İsimsiz Proje"}</Title>
-            <div className="flex items-center">
-              <Text type="secondary" className="mr-2">Durum:</Text>
-              {getStatusTag(project.status)}
+        {/* Ana proje bilgileri kartı */}
+        <Card className="shadow-md rounded-lg mb-6">
+          <div className="mb-4 flex justify-between items-start">
+            <div>
+              <Title level={3} className="mb-1">{project.name || "İsimsiz Proje"}</Title>
+              <div className="flex items-center">
+                <Text type="secondary" className="mr-2">Durum:</Text>
+                {getStatusTag(project.status)}
+              </div>
+            </div>
+            <div className="text-right">
+              <Text type="secondary">Oluşturulma Tarihi</Text>
+              <div className="text-base font-medium">{formatDate(project.createdAt)}</div>
             </div>
           </div>
-          <div className="text-right">
-            <Text type="secondary">Oluşturulma Tarihi</Text>
-            <div className="text-base font-medium">{formatDate(project.createdAt)}</div>
-          </div>
-        </div>
 
-        {/* Proje detayları bölümü */}
-        <Row gutter={[24, 24]}>
-          <Col span={24} lg={12}>
-            <Card 
-              title={<div className="flex items-center"><ProjectOutlined className="mr-2" /> Proje Bilgileri</div>} 
-              className="h-full"
-              type="inner"
-            >
-              <Descriptions column={1} layout="vertical" bordered size="small">
-                <Descriptions.Item label={<span><ProjectOutlined className="mr-1" /> Proje Adı</span>}>
-                  {project.name || "-"}
-                </Descriptions.Item>
-                <Descriptions.Item label={<span><CodeOutlined className="mr-1" /> DDO Numarası</span>}>
-                  {project.ddo || "-"}
-                </Descriptions.Item>
-                <Descriptions.Item label={<span><CodeOutlined className="mr-1" /> Tellcordia Numarası</span>}>
-                  {project.tellcordiaNo || "-"}
-                </Descriptions.Item>
-                <Descriptions.Item label={<span><HomeOutlined className="mr-1" /> Home Pass</span>}>
-                  {project.homePass || "-"}
-                </Descriptions.Item>
-                <Descriptions.Item label={<span><CalendarOutlined className="mr-1" /> Proje Tarihi</span>}>
-                  {formatDate(project.date) || "-"}
-                </Descriptions.Item>
-                <Descriptions.Item label={<span><DatabaseOutlined className="mr-1" /> Küme</span>}>
-                  <Tag color="blue" icon={<DatabaseOutlined />}>{project.clusterName || "Belirtilmemiş"}</Tag>
-                </Descriptions.Item>
-                <Descriptions.Item label={<span><CalendarOutlined className="mr-1" /> Son Güncelleme</span>}>
-                  {formatDate(project.updatedAt)}
-                </Descriptions.Item>
-              </Descriptions>
-            </Card>
-          </Col>
+          {/* Proje detayları bölümü */}
+          <Row gutter={[24, 24]}>
+            <Col span={24} lg={12}>
+              <Card 
+                title={<div className="flex items-center"><ProjectOutlined className="mr-2" /> Proje Bilgileri</div>} 
+                className="h-full"
+                type="inner"
+              >
+                <Descriptions column={1} layout="vertical" bordered size="small">
+                  <Descriptions.Item label={<span><ProjectOutlined className="mr-1" /> Proje Adı</span>}>
+                    {project.name || "-"}
+                  </Descriptions.Item>
+                  <Descriptions.Item label={<span><CodeOutlined className="mr-1" /> DDO Numarası</span>}>
+                    {project.ddo || "-"}
+                  </Descriptions.Item>
+                  <Descriptions.Item label={<span><CodeOutlined className="mr-1" /> Tellcordia Numarası</span>}>
+                    {project.tellcordiaNo || "-"}
+                  </Descriptions.Item>
+                  <Descriptions.Item label={<span><HomeOutlined className="mr-1" /> Home Pass</span>}>
+                    {project.homePass || "-"}
+                  </Descriptions.Item>
+                  <Descriptions.Item label={<span><CalendarOutlined className="mr-1" /> Proje Tarihi</span>}>
+                    {formatDate(project.date) || "-"}
+                  </Descriptions.Item>
+                  <Descriptions.Item label={<span><DatabaseOutlined className="mr-1" /> Küme</span>}>
+                    <Tag color="blue" icon={<DatabaseOutlined />}>{project.clusterName || "Belirtilmemiş"}</Tag>
+                  </Descriptions.Item>
+                  <Descriptions.Item label={<span><CalendarOutlined className="mr-1" /> Son Güncelleme</span>}>
+                    {formatDate(project.updatedAt)}
+                  </Descriptions.Item>
+                </Descriptions>
+              </Card>
+            </Col>
 
-          <Col span={24} lg={12}>
-            <Card 
-              title={<div className="flex items-center"><EnvironmentOutlined className="mr-2" /> Konum ve Saha Bilgileri</div>} 
-              className="h-full"
-              type="inner"
-            >
-              <Descriptions column={1} layout="vertical" bordered size="small">
-                <Descriptions.Item label={<span><EnvironmentOutlined className="mr-1" /> Şehir</span>}>
-                  {project.city || "-"}
-                </Descriptions.Item>
-                <Descriptions.Item label={<span><ToolOutlined className="mr-1" /> Saha Tipi</span>}>
-                  {project.fieldType || "-"}
-                </Descriptions.Item>
-                <Descriptions.Item label={<span><ToolOutlined className="mr-1" /> Saha Adı</span>}>
-                  {project.fieldName || "-"}
-                </Descriptions.Item>
-                <Descriptions.Item label={<span><CodeOutlined className="mr-1" /> LOC</span>}>
-                  {project.loc || "-"}
-                </Descriptions.Item>
-                <Descriptions.Item label={<span><CodeOutlined className="mr-1" /> SIR</span>}>
-                  {project.sir || "-"}
-                </Descriptions.Item>
-              </Descriptions>
-            </Card>
-          </Col>
+            <Col span={24} lg={12}>
+              <Card 
+                title={<div className="flex items-center"><EnvironmentOutlined className="mr-2" /> Konum ve Saha Bilgileri</div>} 
+                className="h-full"
+                type="inner"
+              >
+                <Descriptions column={1} layout="vertical" bordered size="small">
+                  <Descriptions.Item label={<span><EnvironmentOutlined className="mr-1" /> Şehir</span>}>
+                    {project.city || "-"}
+                  </Descriptions.Item>
+                  <Descriptions.Item label={<span><ToolOutlined className="mr-1" /> Saha Tipi</span>}>
+                    {project.fieldType || "-"}
+                  </Descriptions.Item>
+                  <Descriptions.Item label={<span><ToolOutlined className="mr-1" /> Saha Adı</span>}>
+                    {project.fieldName || "-"}
+                  </Descriptions.Item>
+                  <Descriptions.Item label={<span><CodeOutlined className="mr-1" /> LOC</span>}>
+                    {project.loc || "-"}
+                  </Descriptions.Item>
+                  <Descriptions.Item label={<span><CodeOutlined className="mr-1" /> SIR</span>}>
+                    {project.sir || "-"}
+                  </Descriptions.Item>
+                </Descriptions>
+              </Card>
+            </Col>
 
-          {/* Denetçi (Supervisor) bilgileri */}
-          <Col span={24} lg={12}>
-            <Card 
-              title={<div className="flex items-center"><UserOutlined className="mr-2" /> Denetçi (Supervisor)</div>} 
-              className="h-full shadow-sm"
-              type="inner"
-            >
-              {renderUserInfo(project.supervisor, 'supervisor')}
-            </Card>
-          </Col>
+            {/* Denetçi (Supervisor) bilgileri */}
+            <Col span={24} lg={12}>
+              <Card 
+                title={<div className="flex items-center"><UserOutlined className="mr-2" /> Denetçi (Supervisor)</div>} 
+                className="h-full shadow-sm"
+                type="inner"
+              >
+                {renderUserInfo(project.supervisor, 'supervisor')}
+              </Card>
+            </Col>
 
-          {/* Yüklenici (Taşeron) bilgileri */}
-          <Col span={24} lg={12}>
-            <Card 
-              title={<div className="flex items-center"><TeamOutlined className="mr-2" /> Yüklenici (Taşeron)</div>} 
-              className="h-full shadow-sm"
-              type="inner"
-            >
-              {renderUserInfo(project.contractor, 'contractor')}
-            </Card>
-          </Col>
-        </Row>
-      </Card>
-
-      {/* Notlar bölümü */}
-      {project.notes && (
-        <Card 
-          title={<div className="flex items-center"><MessageOutlined className="mr-2" /> Proje Notları</div>}
-          className="shadow-md rounded-lg mb-6"
-        >
-          <div className="bg-gray-50 p-3 rounded-lg whitespace-pre-line">
-            {project.notes || "Not eklenmemiş."}
-          </div>
+            {/* Yüklenici (Taşeron) bilgileri */}
+            <Col span={24} lg={12}>
+              <Card 
+                title={<div className="flex items-center"><TeamOutlined className="mr-2" /> Yüklenici (Taşeron)</div>} 
+                className="h-full shadow-sm"
+                type="inner"
+              >
+                {renderUserInfo(project.contractor, 'contractor')}
+              </Card>
+            </Col>
+          </Row>
         </Card>
-      )}
 
-      {/* Poz Bilgileri Bölümü */}
-      <Card 
-        title={<div className="flex items-center"><DatabaseOutlined className="mr-2" /> Poz Bilgileri</div>}
-        className="shadow-md rounded-lg mb-6"
-        extra={
-          <Button 
-            type="primary" 
-            icon={<PlusOutlined />}
-            onClick={() => setIsAddPozModalOpen(true)}
+        {/* Notlar bölümü */}
+        {project.notes && (
+          <Card 
+            title={<div className="flex items-center"><MessageOutlined className="mr-2" /> Proje Notları</div>}
+            className="shadow-md rounded-lg mb-6"
           >
-            Poz Ekle
-          </Button>
-        }
-      >
-        {pozes && pozes.length > 0 ? (
-          <div className="overflow-x-auto">
-            <Table 
-              columns={pozColumns} 
-              dataSource={pozes} 
-              rowKey="_id"
-              pagination={false}
-            />
-          </div>
-        ) : (
-          <Empty 
-            image={Empty.PRESENTED_IMAGE_SIMPLE} 
-            description={
-              <div>
-                <p className="text-lg mb-2">Poz bilgisi bulunamadı</p>
-                <p className="text-gray-500">Bu projeye henüz poz bilgisi eklenmemiş.</p>
-              </div>
-            }
-          />
+            <div className="bg-gray-50 p-3 rounded-lg whitespace-pre-line">
+              {project.notes || "Not eklenmemiş."}
+            </div>
+          </Card>
         )}
-      </Card>
 
-      {/* Belgeler Bölümü */}
-      <Card 
-        title={
-          <div className="flex justify-between items-center">
-            <span>Proje Belgeleri</span>
+        {/* Poz Bilgileri Bölümü */}
+        <Card 
+          title={<div className="flex items-center"><DatabaseOutlined className="mr-2" /> Poz Bilgileri</div>}
+          className="shadow-md rounded-lg mb-6"
+          extra={
             <Button 
               type="primary" 
-              icon={<PlusOutlined />} 
-              onClick={() => setIsAddDocumentModalOpen(true)}
+              icon={<PlusOutlined />}
+              onClick={() => setIsAddPozModalOpen(true)}
+            >
+              Poz Ekle
+            </Button>
+          }
+        >
+          {pozes && pozes.length > 0 ? (
+            <div className="overflow-x-auto">
+              <Table 
+                columns={pozColumns} 
+                dataSource={pozes} 
+                rowKey="_id"
+                pagination={false}
+              />
+            </div>
+          ) : (
+            <Empty 
+              image={Empty.PRESENTED_IMAGE_SIMPLE} 
+              description={
+                <div>
+                  <p className="text-lg mb-2">Poz bilgisi bulunamadı</p>
+                  <p className="text-gray-500">Bu projeye henüz poz bilgisi eklenmemiş.</p>
+                </div>
+              }
+            />
+          )}
+        </Card>
+
+        {/* Belgeler Bölümü */}
+        <Card 
+          title={
+            <div className="flex justify-between items-center">
+              <span>Proje Belgeleri</span>
+              <Button 
+                type="primary" 
+                icon={<PlusOutlined />} 
+                onClick={() => setIsAddDocumentModalOpen(true)}
+              >
+                Belge Ekle
+              </Button>
+            </div>
+          }
+          className="mb-6 shadow-md"
+        >
+          {loadingDocuments ? (
+            <div className="text-center py-4">
+              <Spin size="large" />
+              <div className="mt-2">Belgeler yükleniyor...</div>
+            </div>
+          ) : documents.length === 0 ? (
+            <Empty description="Henüz belge eklenmemiş" />
+          ) : (
+            <Table 
+              columns={documentColumns} 
+              dataSource={documents} 
+              rowKey="_id" 
+              pagination={{ pageSize: 5 }}
+            />
+          )}
+        </Card>
+
+        {/* Tarihçe Bölümü */}
+        <Card 
+          title={<div className="flex items-center"><ClockCircleOutlined className="mr-2" /> Proje Tarihçesi</div>}
+          className="shadow-md rounded-lg mb-6"
+        >
+          {logs && logs.length > 0 ? (
+            <Timeline className="p-4">
+              {/* Oluşturulma kaydı */}
+              <Timeline.Item color="green">
+                <div className="font-medium">Proje oluşturuldu</div>
+                <div className="text-sm text-gray-500">
+                  {formatDate(project.createdAt)}
+                </div>
+              </Timeline.Item>
+              
+              {/* Log kayıtları */}
+              {logs.map((log, index) => (
+                <Timeline.Item key={index} color="blue">
+                  <div className="font-medium">{log.note}</div>
+                  <div className="text-sm text-gray-500">
+                    {formatDate(log.createdAt)}
+                    {log.user && <span> - {log.user.fullName}</span>}
+                  </div>
+                </Timeline.Item>
+              ))}
+              
+              {/* Son güncelleme kaydı (eğer farklıysa) */}
+              {project.updatedAt && project.createdAt !== project.updatedAt && (
+                <Timeline.Item color="orange">
+                  <div className="font-medium">Son güncelleme</div>
+                  <div className="text-sm text-gray-500">
+                    {formatDate(project.updatedAt)}
+                    <span> - Durum: {project.status}</span>
+                  </div>
+                </Timeline.Item>
+              )}
+            </Timeline>
+          ) : (
+            <Empty description="Proje tarihçesi bulunamadı" />
+          )}
+        </Card>
+
+        {/* Not Ekleme Butonu */}
+        <div className="mb-4">
+          <Button 
+            type="primary" 
+            onClick={() => setNoteModalVisible(true)}
+            icon={<PlusOutlined />}
+          >
+            Not Ekle
+          </Button>
+        </div>
+
+        {/* Not Ekleme Modalı */}
+        <Modal
+          title="Projeye Not Ekle"
+          open={noteModalVisible}
+          onCancel={() => setNoteModalVisible(false)}
+          footer={null}
+        >
+          <Form
+            form={noteForm}
+            onFinish={handleAddNote}
+            layout="vertical"
+          >
+            <Form.Item
+              name="note"
+              label="Not"
+              rules={[{ required: true, message: 'Lütfen bir not girin' }]}
+            >
+              <AntInput.TextArea 
+                rows={4} 
+                placeholder="Notunuzu buraya yazın..."
+              />
+            </Form.Item>
+            <Form.Item>
+              <Space>
+                <Button 
+                  type="primary" 
+                  htmlType="submit" 
+                  loading={noteLoading}
+                >
+                  Kaydet
+                </Button>
+                <Button onClick={() => setNoteModalVisible(false)}>
+                  İptal
+                </Button>
+              </Space>
+            </Form.Item>
+          </Form>
+        </Modal>
+
+        <AddPozModal
+          isOpen={isAddPozModalOpen}
+          onClose={() => {
+            setIsAddPozModalOpen(false);
+            setIsAddingPoz(false);
+          }}
+          onAdd={handleAddPoz}
+          loading={isAddingPoz}
+        />
+
+        <Modal
+          title="Poz Silme"
+          open={deleteModalVisible}
+          onOk={() => {
+            if (selectedPoz) {
+              handleDeletePoz(selectedPoz._id);
+            }
+          }}
+          onCancel={() => {
+            setDeleteModalVisible(false);
+            setSelectedPoz(null);
+            setIsDeleting(false);
+          }}
+          okText="Evet"
+          cancelText="Hayır"
+          okType="danger"
+          confirmLoading={isDeleting}
+        >
+          {selectedPoz && (
+            <p>{selectedPoz.poz.name} pozunu silmek istediğinizden emin misiniz?</p>
+          )}
+        </Modal>
+
+        {/* Belge Ekleme Modalı */}
+        <Modal
+          title="Proje Belgesi Ekle"
+          open={isAddDocumentModalOpen}
+          onCancel={() => {
+            setIsAddDocumentModalOpen(false);
+            setDocumentType('');
+            setDocumentUrl('');
+          }}
+          footer={[
+            <Button 
+              key="cancel" 
+              onClick={() => {
+                setIsAddDocumentModalOpen(false);
+                setDocumentType('');
+                setDocumentUrl('');
+              }}
+            >
+              İptal
+            </Button>,
+            <Button 
+              key="submit" 
+              type="primary" 
+              onClick={handleAddDocument}
+              disabled={!documentType || !documentUrl}
             >
               Belge Ekle
             </Button>
-          </div>
-        }
-        className="mb-6 shadow-md"
-      >
-        {loadingDocuments ? (
-          <div className="text-center py-4">
-            <Spin size="large" />
-            <div className="mt-2">Belgeler yükleniyor...</div>
-          </div>
-        ) : documents.length === 0 ? (
-          <Empty description="Henüz belge eklenmemiş" />
-        ) : (
-          <Table 
-            columns={documentColumns} 
-            dataSource={documents} 
-            rowKey="_id" 
-            pagination={{ pageSize: 5 }}
-          />
-        )}
-      </Card>
-
-      {/* Tarihçe Bölümü */}
-      <Card 
-        title={<div className="flex items-center"><ClockCircleOutlined className="mr-2" /> Proje Tarihçesi</div>}
-        className="shadow-md rounded-lg mb-6"
-      >
-        {logs && logs.length > 0 ? (
-          <Timeline className="p-4">
-            {/* Oluşturulma kaydı */}
-            <Timeline.Item color="green">
-              <div className="font-medium">Proje oluşturuldu</div>
-              <div className="text-sm text-gray-500">
-                {formatDate(project.createdAt)}
-              </div>
-            </Timeline.Item>
-            
-            {/* Log kayıtları */}
-            {logs.map((log, index) => (
-              <Timeline.Item key={index} color="blue">
-                <div className="font-medium">{log.note}</div>
-                <div className="text-sm text-gray-500">
-                  {formatDate(log.createdAt)}
-                  {log.user && <span> - {log.user.fullName}</span>}
-                </div>
-              </Timeline.Item>
-            ))}
-            
-            {/* Son güncelleme kaydı (eğer farklıysa) */}
-            {project.updatedAt && project.createdAt !== project.updatedAt && (
-              <Timeline.Item color="orange">
-                <div className="font-medium">Son güncelleme</div>
-                <div className="text-sm text-gray-500">
-                  {formatDate(project.updatedAt)}
-                  <span> - Durum: {project.status}</span>
-                </div>
-              </Timeline.Item>
-            )}
-          </Timeline>
-        ) : (
-          <Empty description="Proje tarihçesi bulunamadı" />
-        )}
-      </Card>
-
-      {/* Not Ekleme Butonu */}
-      <div className="mb-4">
-        <Button 
-          type="primary" 
-          onClick={() => setNoteModalVisible(true)}
-          icon={<PlusOutlined />}
+          ]}
         >
-          Not Ekle
-        </Button>
-      </div>
-
-      {/* Not Ekleme Modalı */}
-      <Modal
-        title="Projeye Not Ekle"
-        open={noteModalVisible}
-        onCancel={() => setNoteModalVisible(false)}
-        footer={null}
-      >
-        <Form
-          form={noteForm}
-          onFinish={handleAddNote}
-          layout="vertical"
-        >
-          <Form.Item
-            name="note"
-            label="Not"
-            rules={[{ required: true, message: 'Lütfen bir not girin' }]}
-          >
-            <AntInput.TextArea 
-              rows={4} 
-              placeholder="Notunuzu buraya yazın..."
-            />
-          </Form.Item>
-          <Form.Item>
-            <Space>
-              <Button 
-                type="primary" 
-                htmlType="submit" 
-                loading={noteLoading}
-              >
-                Kaydet
-              </Button>
-              <Button onClick={() => setNoteModalVisible(false)}>
-                İptal
-              </Button>
-            </Space>
-          </Form.Item>
-        </Form>
-      </Modal>
-
-      <AddPozModal
-        isOpen={isAddPozModalOpen}
-        onClose={() => {
-          setIsAddPozModalOpen(false);
-          setIsAddingPoz(false);
-        }}
-        onAdd={handleAddPoz}
-        loading={isAddingPoz}
-      />
-
-      <Modal
-        title="Poz Silme"
-        open={deleteModalVisible}
-        onOk={() => {
-          if (selectedPoz) {
-            handleDeletePoz(selectedPoz._id);
-          }
-        }}
-        onCancel={() => {
-          setDeleteModalVisible(false);
-          setSelectedPoz(null);
-          setIsDeleting(false);
-        }}
-        okText="Evet"
-        cancelText="Hayır"
-        okType="danger"
-        confirmLoading={isDeleting}
-      >
-        {selectedPoz && (
-          <p>{selectedPoz.poz.name} pozunu silmek istediğinizden emin misiniz?</p>
-        )}
-      </Modal>
-
-      {/* Belge Ekleme Modalı */}
-      <Modal
-        title="Proje Belgesi Ekle"
-        open={isAddDocumentModalOpen}
-        onCancel={() => {
-          setIsAddDocumentModalOpen(false);
-          setDocumentType('');
-          setDocumentUrl('');
-        }}
-        footer={[
-          <Button 
-            key="cancel" 
-            onClick={() => {
-              setIsAddDocumentModalOpen(false);
-              setDocumentType('');
-              setDocumentUrl('');
-            }}
-          >
-            İptal
-          </Button>,
-          <Button 
-            key="submit" 
-            type="primary" 
-            onClick={handleAddDocument}
-            disabled={!documentType || !documentUrl}
-          >
-            Belge Ekle
-          </Button>
-        ]}
-      >
-        <div className="mb-4">
-          <label className="block mb-2">Belge Türü:</label>
-          <Select
-            placeholder="Belge türü seçin"
-            style={{ width: '100%' }}
-            value={documentType}
-            onChange={(value) => setDocumentType(value)}
-          >
-            <Select.Option value="AKTIVASYON FOTO">AKTIVASYON FOTO</Select.Option>
-            <Select.Option value="BARKOD">BARKOD</Select.Option>
-            <Select.Option value="HASARSIZLIK (FORM)">HASARSIZLIK (FORM)</Select.Option>
-            <Select.Option value="IMALAT FOTO">IMALAT FOTO</Select.Option>
-            <Select.Option value="ISLAH FOTO">ISLAH FOTO</Select.Option>
-            <Select.Option value="KESIF (FORM)">KESIF (FORM)</Select.Option>
-            <Select.Option value="KMZ (KMZ)">KMZ (KMZ)</Select.Option>
-            <Select.Option value="MUTABAKAT (FORM)">MUTABAKAT (FORM)</Select.Option>
-            <Select.Option value="OTDR (SOR)">OTDR (SOR)</Select.Option>
-          </Select>
-        </div>
-        
-        <div className="mb-4">
-          <label className="block mb-2">Belge Yükle:</label>
-          <FileUpload 
-            onSuccess={handleFileUploadSuccess} 
-            buttonText="Belge Yükle"
-            maxFileSize={10}
-          />
-          {documentUrl && (
-            <div className="mt-2 text-green-500">
-              ✓ Belge başarıyla yüklendi
-            </div>
-          )}
-        </div>
-      </Modal>
-
-      <Modal
-        title="Proje Durumu Değiştir"
-        open={statusModalVisible}
-        onOk={handleStatusChange}
-        onCancel={() => {
-          setStatusModalVisible(false);
-          setSelectedStatus('');
-        }}
-        confirmLoading={statusLoading}
-      >
-        <Form layout="vertical">
-          <Form.Item label="Yeni Durum" required>
+          <div className="mb-4">
+            <label className="block mb-2">Belge Türü:</label>
             <Select
-              value={selectedStatus}
-              onChange={setSelectedStatus}
-              placeholder="Durum seçin"
-              options={statusOptions}
+              placeholder="Belge türü seçin"
+              style={{ width: '100%' }}
+              value={documentType}
+              onChange={(value) => setDocumentType(value)}
+            >
+              <Select.Option value="AKTIVASYON FOTO">AKTIVASYON FOTO</Select.Option>
+              <Select.Option value="BARKOD">BARKOD</Select.Option>
+              <Select.Option value="HASARSIZLIK (FORM)">HASARSIZLIK (FORM)</Select.Option>
+              <Select.Option value="IMALAT FOTO">IMALAT FOTO</Select.Option>
+              <Select.Option value="ISLAH FOTO">ISLAH FOTO</Select.Option>
+              <Select.Option value="KESIF (FORM)">KESIF (FORM)</Select.Option>
+              <Select.Option value="KMZ (KMZ)">KMZ (KMZ)</Select.Option>
+              <Select.Option value="MUTABAKAT (FORM)">MUTABAKAT (FORM)</Select.Option>
+              <Select.Option value="OTDR (SOR)">OTDR (SOR)</Select.Option>
+            </Select>
+          </div>
+          
+          <div className="mb-4">
+            <label className="block mb-2">Belge Yükle:</label>
+            <FileUpload 
+              onSuccess={handleFileUploadSuccess} 
+              buttonText="Belge Yükle"
+              maxFileSize={10}
             />
-          </Form.Item>
-        </Form>
-      </Modal>
+            {documentUrl && (
+              <div className="mt-2 text-green-500">
+                ✓ Belge başarıyla yüklendi
+              </div>
+            )}
+          </div>
+        </Modal>
+
+        <Modal
+          title="Proje Durumu Değiştir"
+          open={statusModalVisible}
+          onOk={handleStatusChange}
+          onCancel={() => {
+            setStatusModalVisible(false);
+            setSelectedStatus('');
+          }}
+          confirmLoading={statusLoading}
+        >
+          <Form layout="vertical">
+            <Form.Item label="Yeni Durum" required>
+              <Select
+                value={selectedStatus}
+                onChange={setSelectedStatus}
+                placeholder="Durum seçin"
+                options={statusOptions}
+              />
+            </Form.Item>
+          </Form>
+        </Modal>
+      </Card>
     </div>
   );
 };

@@ -16,29 +16,25 @@ const { Title, Text } = Typography;
 
 const StatCard = ({ title, value, icon, color, loading }) => (
   <Card 
-    className="h-full hover:shadow-md transition-shadow" 
-    bodyStyle={{ padding: '20px' }}
+    className="h-full hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1" 
+    bodyStyle={{ padding: '24px' }}
     bordered={false}
-    style={{ borderRadius: '8px' }}
+    style={{ borderRadius: '16px', background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)' }}
   >
     {loading ? (
       <div className="flex justify-center items-center h-24">
         <Spin />
       </div>
     ) : (
-      <>
-        <div className="mb-2">
-          <Text type="secondary">{title}</Text>
-        </div>
-        <div className="flex justify-between items-center">
-          <span className="text-2xl font-bold">{value}</span>
-          <div 
-            className={`flex items-center justify-center w-12 h-12 rounded-full ${color}`}
-          >
+      <div className="flex flex-col h-full">
+        <div className="flex items-center justify-between mb-4">
+          <div className={`p-3 rounded-xl ${color} bg-opacity-10`}>
             {icon}
           </div>
+          <div className="text-3xl font-bold text-gray-800">{value}</div>
         </div>
-      </>
+        <Text type="secondary" className="text-base font-medium">{title}</Text>
+      </div>
     )}
   </Card>
 );
@@ -125,12 +121,12 @@ const Home = () => {
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="p-6 max-w-7xl mx-auto bg-gray-50 min-h-screen">
       {/* Hoş geldin mesajı */}
-      <div className="mb-8">
+      <div className="mb-8 bg-white p-6 rounded-2xl shadow-sm">
         <Title level={2} className="mb-1 flex items-center">
-          <span className="mr-2">{getGreeting()},</span> 
-          <span className="text-blue-600">{user?.fullName}</span>
+          <span className="mr-2 text-gray-700">{getGreeting()},</span> 
+          <span className="text-blue-600 font-semibold">{user?.fullName}</span>
         </Title>
         <Text type="secondary" className="text-lg">
           İşte bugünkü özet:
@@ -138,13 +134,13 @@ const Home = () => {
       </div>
 
       {/* İstatistik kartları */}
-      <Row gutter={[16, 16]} className="mb-8">
+      <Row gutter={[24, 24]} className="mb-8">
         <Col xs={24} sm={12} md={8} lg={6}>
           <StatCard 
             title="Toplam Projeler" 
             value={stats.totalProjects} 
-            icon={<ProjectOutlined style={{ fontSize: 24, color: "white" }} />} 
-            color="bg-blue-600 text-white"
+            icon={<ProjectOutlined style={{ fontSize: 28, color: "#3b82f6" }} />} 
+            color="text-blue-500"
             loading={loading}
           />
         </Col>
@@ -152,8 +148,8 @@ const Home = () => {
           <StatCard 
             title="Tamamlanan Projeler" 
             value={stats.completedProjects} 
-            icon={<CheckCircleOutlined style={{ fontSize: 24, color: "white" }} />} 
-            color="bg-green-600 text-white"
+            icon={<CheckCircleOutlined style={{ fontSize: 28, color: "#10b981" }} />} 
+            color="text-green-500"
             loading={loading}
           />
         </Col>
@@ -161,8 +157,8 @@ const Home = () => {
           <StatCard 
             title="İşlemdeki Projeler" 
             value={stats.inProgressProjects} 
-            icon={<ClockCircleOutlined style={{ fontSize: 24, color: "white" }} />} 
-            color="bg-orange-500 text-white"
+            icon={<ClockCircleOutlined style={{ fontSize: 28, color: "#f59e0b" }} />} 
+            color="text-orange-500"
             loading={loading}
           />
         </Col>
@@ -170,8 +166,8 @@ const Home = () => {
           <StatCard 
             title="Stok Ürünleri" 
             value={stats.stockItems} 
-            icon={<InboxOutlined style={{ fontSize: 24, color: "white" }} />} 
-            color="bg-purple-600 text-white"
+            icon={<InboxOutlined style={{ fontSize: 28, color: "#8b5cf6" }} />} 
+            color="text-purple-500"
             loading={loading}
           />
         </Col>
@@ -179,25 +175,31 @@ const Home = () => {
 
       {/* Durum kartı */}
       <div className="mb-8">
-        <Title level={4} className="mb-4 flex items-center">
-          <BarChartOutlined className="mr-2" />
-          Proje Durumları
-        </Title>
-        <Card bordered={false} className="shadow-sm" style={{ borderRadius: '8px' }}>
+        <Card 
+          bordered={false} 
+          className="shadow-sm rounded-2xl overflow-hidden"
+          title={
+            <div className="flex items-center">
+              <BarChartOutlined className="text-xl text-blue-500 mr-2" />
+              <span className="text-lg font-medium">Proje Durumları</span>
+            </div>
+          }
+        >
           <Status />
         </Card>
       </div>
 
       {/* Son projeler */}
       <div className="mb-6">
-        <Title level={4} className="mb-4 flex items-center">
-          <ProjectOutlined className="mr-2" />
-          Son Projeler
-        </Title>
         <Card 
-          className="shadow-sm"
           bordered={false}
-          style={{ borderRadius: '8px' }}
+          className="shadow-sm rounded-2xl overflow-hidden"
+          title={
+            <div className="flex items-center">
+              <ProjectOutlined className="text-xl text-blue-500 mr-2" />
+              <span className="text-lg font-medium">Son Projeler</span>
+            </div>
+          }
         >
           {projectsLoading ? (
             <div className="space-y-4">
@@ -211,9 +213,9 @@ const Home = () => {
           ) : (
             <div className="space-y-4">
               {recentProjects.map((project, index) => (
-                <div key={project._id}>
+                <div key={project._id} className="p-4 hover:bg-gray-50 rounded-xl transition-colors">
                   <div className="flex justify-between items-center">
-                    <Text strong>{project.name}</Text>
+                    <Text strong className="text-base">{project.name}</Text>
                     <Badge 
                       count={project.status} 
                       style={{ 
@@ -221,11 +223,13 @@ const Home = () => {
                           project.status === "Tamamlandı" ? "#10b981" :
                           project.status === "İşlemde" ? "#3b82f6" :
                           project.status === "Onayda" ? "#f59e0b" :
-                          "#6b7280"
+                          "#6b7280",
+                        padding: "4px 12px",
+                        borderRadius: "8px"
                       }}
                     />
                   </div>
-                  <div className="flex items-center text-gray-500 text-sm mt-1">
+                  <div className="flex items-center text-gray-500 text-sm mt-2">
                     <CalendarOutlined className="mr-1" /> 
                     <Text type="secondary">Son güncelleme: {formatDate(project.createdAt)}</Text>
                   </div>

@@ -456,8 +456,76 @@ const GetAllProjects = async (req, res) => {
     }
 };
 
+const SearchProject = async (req, res) => {
+    try {
+        const user = req.user;
+        const { 
+            name, 
+            status, 
+            fieldType, 
+            city, 
+            clusterName, 
+            fieldName, 
+            ddo, 
+            tellcordiaNo, 
+            homePass,
+            contractor,
+            supervisor,
+            startDate,
+            endDate
+        } = req.query;
+
+        // Temel filtreyi oluştur
+        let filter = {};
+
+        // Taşeron kullanıcılar için sadece kendi projelerini göster
+        if (user.userType === 'Taşeron') {
+            filter.contractor = user._id;
+        }
+
+        // Diğer filtreleri ekle
+        if (name) filter.name = { $regex: name, $options: 'i' };
+        if (status) filter.status = status;
+        if (fieldType) filter.fieldType = fieldType;
+        if (city) filter.city = { $regex: city, $options: 'i' };
+        if (clusterName) filter.clusterName = { $regex: clusterName, $options: 'i' };
+        if (fieldName) filter.fieldName = { $regex: fieldName, $options: 'i' };
+        if (ddo) filter.ddo = { $regex: ddo, $options: 'i' };
+        if (tellcordiaNo) filter.tellcordiaNo = { $regex: tellcordiaNo, $options: 'i' };
+        if (homePass) filter.homePass = { $regex: homePass, $options: 'i' };
+        if (contractor) filter.contractor = contractor;
+        if (supervisor) filter.supervisor = supervisor;
+
+        // Tarih filtresi
+        if (startDate || endDate) {
+            filter.createdAt = {};
+            if (startDate) filter.createdAt.$gte = new Date(startDate);
+            if (endDate) filter.createdAt.$lte = new Date(endDate);
+        }
+
+        const projects = await ProjectDB.find(filter)
+            .populate({
+                path: 'supervisor',
+                select: 'fullName email phone userType',
+                model: 'users'
+            })
+            .populate({
+                path: 'contractor',
+                select: 'fullName email phone userType',
+                model: 'users'
+            })
+            .sort({ createdAt: -1 });
+
+        res.status(200).json(projects);
+    } catch (error) {
+        console.error("Arama hatası:", error);
+        res.status(500).json({ message: "Arama sırasında bir hata oluştu." });
+    }
+};
+
 module.exports = { 
     CreateProject, GetProjects, GetProjectDetail, DeleteProject,
     AddProjectLog, DeleteProjectLog, AddProjectPoz, ChangeProjectStatus, DeleteProjectPoz,
-    AddProjectDocument, GetProjectDocuments, DeleteProjectDocument, GetProject, GetAllProjects
+    AddProjectDocument, GetProjectDocuments, DeleteProjectDocument, GetProject, GetAllProjects,
+    SearchProject
 };

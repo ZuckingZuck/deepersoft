@@ -202,362 +202,364 @@ const ProjectNew = () => {
   }
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
-      <div className="flex justify-between items-center mb-6">
-        <div className="flex items-center">
-          <ProjectOutlined className="text-2xl mr-3 text-blue-600" />
-          <Title level={2} className="m-0">Yeni Proje Oluştur</Title>
+    <div className="p-6 max-w-7xl mx-auto bg-gray-50 min-h-screen">
+      <Card className="shadow-lg rounded-2xl border-0">
+        <div className="flex justify-between items-center mb-6">
+          <div className="flex items-center">
+            <ProjectOutlined className="text-2xl mr-3 text-blue-600" />
+            <Title level={2} className="m-0">Yeni Proje Oluştur</Title>
+          </div>
+          <Button 
+            type="default" 
+            icon={<ArrowLeftOutlined />} 
+            onClick={() => navigate(-1)}
+          >
+            Geri Dön
+          </Button>
         </div>
-        <Button 
-          type="default" 
-          icon={<ArrowLeftOutlined />} 
-          onClick={() => navigate(-1)}
-        >
-          Geri Dön
-        </Button>
-      </div>
 
-      {/* Öbek verileri hata durumu */}
-      {clusterStatus === 'failed' && (
-        <Alert
-          message="Öbek Verileri Yüklenemedi"
-          description={
-            <div>
-              <p>{clusterError || 'API ile bağlantı kurulurken bir sorun oluştu.'}</p>
-              <Button 
-                type="primary" 
-                icon={<ReloadOutlined />} 
-                onClick={reloadClusters}
-                className="mt-2"
-              >
-                Yeniden Dene
-              </Button>
-            </div>
-          }
-          type="error"
-          showIcon
-          className="mb-6"
-        />
-      )}
+        {/* Öbek verileri hata durumu */}
+        {clusterStatus === 'failed' && (
+          <Alert
+            message="Öbek Verileri Yüklenemedi"
+            description={
+              <div>
+                <p>{clusterError || 'API ile bağlantı kurulurken bir sorun oluştu.'}</p>
+                <Button 
+                  type="primary" 
+                  icon={<ReloadOutlined />} 
+                  onClick={reloadClusters}
+                  className="mt-2"
+                >
+                  Yeniden Dene
+                </Button>
+              </div>
+            }
+            type="error"
+            showIcon
+            className="mb-6"
+          />
+        )}
 
-      {/* Saha tipleri hata durumu */}
-      {fieldTypesError && (
-        <Alert
-          message="Saha Tipi Verileri Yüklenemedi"
-          description={
-            <div>
-              <p>{fieldTypesError}</p>
-              <Button 
-                type="primary" 
-                icon={<ReloadOutlined />} 
-                onClick={loadFieldTypes}
-                className="mt-2"
-              >
-                Yeniden Dene
-              </Button>
-            </div>
-          }
-          type="error"
-          showIcon
-          className="mb-6"
-        />
-      )}
+        {/* Saha tipleri hata durumu */}
+        {fieldTypesError && (
+          <Alert
+            message="Saha Tipi Verileri Yüklenemedi"
+            description={
+              <div>
+                <p>{fieldTypesError}</p>
+                <Button 
+                  type="primary" 
+                  icon={<ReloadOutlined />} 
+                  onClick={loadFieldTypes}
+                  className="mt-2"
+                >
+                  Yeniden Dene
+                </Button>
+              </div>
+            }
+            type="error"
+            showIcon
+            className="mb-6"
+          />
+        )}
 
-      <Card className="shadow-md rounded-lg">
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={onFinish}
-          requiredMark={false}
-          scrollToFirstError
-        >
-          <Row gutter={24}>
-            <Col span={24}>
-              <Title level={4} className="mb-4">
-                <ProjectOutlined className="mr-2" />
-                Proje Bilgileri
-              </Title>
-            </Col>
-          </Row>
-          
-          <Row gutter={24}>
-            <Col span={12}>
-              <Form.Item
-                name="name"
-                label="Proje Adı"
-                rules={[{ required: true, message: 'Lütfen proje adını girin' }]}
-              >
-                <Input placeholder="Proje adını girin" />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                name="ddo"
-                label="DDO Numarası"
-                rules={[{ required: true, message: 'Lütfen DDO numarasını girin' }]}
-              >
-                <Input placeholder="DDO numarasını girin" />
-              </Form.Item>
-            </Col>
-          </Row>
+        <Card className="shadow-md rounded-lg">
+          <Form
+            form={form}
+            layout="vertical"
+            onFinish={onFinish}
+            requiredMark={false}
+            scrollToFirstError
+          >
+            <Row gutter={24}>
+              <Col span={24}>
+                <Title level={4} className="mb-4">
+                  <ProjectOutlined className="mr-2" />
+                  Proje Bilgileri
+                </Title>
+              </Col>
+            </Row>
+            
+            <Row gutter={24}>
+              <Col span={12}>
+                <Form.Item
+                  name="name"
+                  label="Proje Adı"
+                  rules={[{ required: true, message: 'Lütfen proje adını girin' }]}
+                >
+                  <Input placeholder="Proje adını girin" />
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item
+                  name="ddo"
+                  label="DDO Numarası"
+                  rules={[{ required: true, message: 'Lütfen DDO numarasını girin' }]}
+                >
+                  <Input placeholder="DDO numarasını girin" />
+                </Form.Item>
+              </Col>
+            </Row>
 
-          <Row gutter={24}>
-            <Col span={12}>
-              <Form.Item
-                name="tellcordiaNo"
-                label="Tellcordia Numarası"
-                rules={[{ required: true, message: 'Lütfen Tellcordia numarasını girin' }]}
-              >
-                <Input placeholder="Tellcordia numarasını girin" />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                name="homePass"
-                label="Home Pass"
-                rules={[{ required: true, message: 'Lütfen Home Pass değerini girin' }]}
-              >
-                <Input placeholder="Home Pass değerini girin" />
-              </Form.Item>
-            </Col>
-          </Row>
+            <Row gutter={24}>
+              <Col span={12}>
+                <Form.Item
+                  name="tellcordiaNo"
+                  label="Tellcordia Numarası"
+                  rules={[{ required: true, message: 'Lütfen Tellcordia numarasını girin' }]}
+                >
+                  <Input placeholder="Tellcordia numarasını girin" />
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item
+                  name="homePass"
+                  label="Home Pass"
+                  rules={[{ required: true, message: 'Lütfen Home Pass değerini girin' }]}
+                >
+                  <Input placeholder="Home Pass değerini girin" />
+                </Form.Item>
+              </Col>
+            </Row>
 
-          <Divider />
-          
-          <Row gutter={24}>
-            <Col span={24}>
-              <Title level={4} className="mb-4">
-                <EnvironmentOutlined className="mr-2" />
-                Konum Bilgileri
-              </Title>
-            </Col>
-          </Row>
+            <Divider />
+            
+            <Row gutter={24}>
+              <Col span={24}>
+                <Title level={4} className="mb-4">
+                  <EnvironmentOutlined className="mr-2" />
+                  Konum Bilgileri
+                </Title>
+              </Col>
+            </Row>
 
-          <Row gutter={24}>
-            <Col span={8}>
-              <Form.Item
-                name="city"
-                label="Şehir"
-                rules={[{ required: true, message: 'Lütfen şehir seçin' }]}
-                extra={isLoadingClusters ? "Şehirler yükleniyor..." : cities.length === 0 && clusterStatus !== 'loading' ? "Şehir verisi bulunamadı" : ""}
-              >
-                <Select 
-                  placeholder="Şehir seçin" 
-                  loading={isLoadingClusters}
-                  onChange={handleCityChange}
-                  allowClear
+            <Row gutter={24}>
+              <Col span={8}>
+                <Form.Item
+                  name="city"
+                  label="Şehir"
+                  rules={[{ required: true, message: 'Lütfen şehir seçin' }]}
+                  extra={isLoadingClusters ? "Şehirler yükleniyor..." : cities.length === 0 && clusterStatus !== 'loading' ? "Şehir verisi bulunamadı" : ""}
+                >
+                  <Select 
+                    placeholder="Şehir seçin" 
+                    loading={isLoadingClusters}
+                    onChange={handleCityChange}
+                    allowClear
+                    disabled={clusterStatus === 'failed' || cities.length === 0}
+                    notFoundContent={cities.length === 0 ? "Şehir verisi bulunamadı" : null}
+                  >
+                    {cities && cities.length > 0 ? (
+                      cities.map((city, index) => (
+                        <Option key={index} value={city}>{city}</Option>
+                      ))
+                    ) : null}
+                  </Select>
+                </Form.Item>
+              </Col>
+              <Col span={8}>
+                <Form.Item
+                  name="clusterId"
+                  label="Öbek"
+                  rules={[{ required: true, message: 'Lütfen öbek seçin' }]}
+                  extra={!selectedCity ? "Önce bir şehir seçin" : isLoadingClusters ? "Öbekler yükleniyor..." : availableClusters.length === 0 ? "Seçilen şehirde öbek bulunamadı" : ""}
+                >
+                  <Select 
+                    placeholder="Önce şehir seçin" 
+                    loading={isLoadingClusters}
+                    onChange={handleClusterChange}
+                    disabled={!selectedCity || availableClusters.length === 0 || clusterStatus === 'failed'}
+                    allowClear
+                    notFoundContent={availableClusters.length === 0 ? "Öbek verisi bulunamadı" : null}
+                  >
+                    {availableClusters && availableClusters.length > 0 ? (
+                      availableClusters.map(cluster => (
+                        <Option key={cluster._id} value={cluster._id}>{cluster.name}</Option>
+                      ))
+                    ) : null}
+                  </Select>
+                </Form.Item>
+              </Col>
+              <Col span={8}>
+                <Form.Item
+                  name="clusterName"
+                  label="Öbek Adı"
+                  tooltip="Öbek seçildiğinde otomatik doldurulur"
+                  rules={[{ required: true, message: 'Lütfen öbek adını girin' }]}
+                >
+                  <Input disabled placeholder="Öbek adı" />
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <Row gutter={24}>
+              <Col span={12}>
+                <Form.Item
+                  name="fieldType"
+                  label="Saha Tipi"
+                  rules={[{ required: true, message: 'Lütfen saha tipini seçin' }]}
+                  extra={fieldTypesLoading ? "Saha tipleri yükleniyor..." : fieldTypes.length === 0 && !fieldTypesLoading ? "Saha tipi verisi bulunamadı" : ""}
+                >
+                  <Select 
+                    placeholder="Saha tipi seçin" 
+                    loading={fieldTypesLoading}
+                    disabled={fieldTypes.length === 0 || fieldTypesError}
+                    notFoundContent={fieldTypes.length === 0 ? "Saha tipi verisi bulunamadı" : null}
+                  >
+                    {fieldTypes && fieldTypes.length > 0 ? (
+                      fieldTypes.map(type => (
+                        <Option key={type._id} value={type.name}>{type.name}</Option>
+                      ))
+                    ) : null}
+                  </Select>
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item
+                  name="fieldName"
+                  label="Saha Adı"
+                  rules={[{ required: true, message: 'Lütfen saha adını girin' }]}
+                >
+                  <Input placeholder="Saha adını girin" />
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <Row gutter={24}>
+              <Col span={12}>
+                <Form.Item
+                  name="loc"
+                  label="LOC"
+                >
+                  <Input placeholder="LOC değerini girin" />
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item
+                  name="sir"
+                  label="SIR"
+                >
+                  <Input placeholder="SIR değerini girin" />
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <Divider />
+            
+            <Row gutter={24}>
+              <Col span={24}>
+                <Title level={4} className="mb-4">
+                  <UserOutlined className="mr-2" />
+                  Proje Sorumluları
+                </Title>
+              </Col>
+            </Row>
+
+            <Row gutter={24}>
+              <Col span={12}>
+                <Form.Item
+                  name="supervisor"
+                  label="Supervisor"
+                  rules={[{ required: true, message: 'Lütfen supervisor seçin' }]}
+                >
+                  <Select 
+                    placeholder="Supervisor seçin" 
+                    loading={isLoadingUsers}
+                    notFoundContent={supervisors.length === 0 ? "Supervisor verisi bulunamadı" : null}
+                  >
+                    {supervisors && supervisors.length > 0 ? (
+                      supervisors.map(user => (
+                        <Option key={user._id} value={user._id}>{user.fullName}</Option>
+                      ))
+                    ) : null}
+                  </Select>
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item
+                  name="contractor"
+                  label="Taşeron"
+                  rules={[{ required: true, message: 'Lütfen taşeron seçin' }]}
+                >
+                  <Select 
+                    placeholder="Taşeron seçin" 
+                    loading={isLoadingUsers}
+                    notFoundContent={contractors.length === 0 ? "Taşeron verisi bulunamadı" : null}
+                  >
+                    {contractors && contractors.length > 0 ? (
+                      contractors.map(user => (
+                        <Option key={user._id} value={user._id}>{user.fullName}</Option>
+                      ))
+                    ) : null}
+                  </Select>
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <Divider />
+            
+            <Row gutter={24}>
+              <Col span={24}>
+                <Title level={4} className="mb-4">
+                  <FieldTimeOutlined className="mr-2" />
+                  Zaman Bilgisi
+                </Title>
+              </Col>
+            </Row>
+
+            <Row gutter={24}>
+              <Col span={12}>
+                <Form.Item
+                  name="date"
+                  label="Proje Tarihi"
+                  rules={[{ required: true, message: 'Lütfen proje tarihini seçin' }]}
+                >
+                  <DatePicker 
+                    style={{ width: '100%' }} 
+                    format="DD/MM/YYYY" 
+                    placeholder="Tarih seçin"
+                    locale={locale}
+                  />
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item
+                  name="status"
+                  label="Başlangıç Durumu"
+                  initialValue="İşlemde"
+                >
+                  <Select>
+                    <Option value="İşlemde">İşlemde</Option>
+                    <Option value="Beklemede">Beklemede</Option>
+                  </Select>
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <Divider />
+
+            <Form.Item className="mt-6 flex justify-end">
+              <Space>
+                <Button 
+                  type="default"
+                  onClick={() => navigate(-1)}
+                >
+                  İptal
+                </Button>
+                <Button 
+                  type="primary" 
+                  htmlType="submit" 
+                  icon={<SaveOutlined />}
+                  loading={submitting}
                   disabled={clusterStatus === 'failed' || cities.length === 0}
-                  notFoundContent={cities.length === 0 ? "Şehir verisi bulunamadı" : null}
                 >
-                  {cities && cities.length > 0 ? (
-                    cities.map((city, index) => (
-                      <Option key={index} value={city}>{city}</Option>
-                    ))
-                  ) : null}
-                </Select>
-              </Form.Item>
-            </Col>
-            <Col span={8}>
-              <Form.Item
-                name="clusterId"
-                label="Öbek"
-                rules={[{ required: true, message: 'Lütfen öbek seçin' }]}
-                extra={!selectedCity ? "Önce bir şehir seçin" : isLoadingClusters ? "Öbekler yükleniyor..." : availableClusters.length === 0 ? "Seçilen şehirde öbek bulunamadı" : ""}
-              >
-                <Select 
-                  placeholder="Önce şehir seçin" 
-                  loading={isLoadingClusters}
-                  onChange={handleClusterChange}
-                  disabled={!selectedCity || availableClusters.length === 0 || clusterStatus === 'failed'}
-                  allowClear
-                  notFoundContent={availableClusters.length === 0 ? "Öbek verisi bulunamadı" : null}
-                >
-                  {availableClusters && availableClusters.length > 0 ? (
-                    availableClusters.map(cluster => (
-                      <Option key={cluster._id} value={cluster._id}>{cluster.name}</Option>
-                    ))
-                  ) : null}
-                </Select>
-              </Form.Item>
-            </Col>
-            <Col span={8}>
-              <Form.Item
-                name="clusterName"
-                label="Öbek Adı"
-                tooltip="Öbek seçildiğinde otomatik doldurulur"
-                rules={[{ required: true, message: 'Lütfen öbek adını girin' }]}
-              >
-                <Input disabled placeholder="Öbek adı" />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={24}>
-            <Col span={12}>
-              <Form.Item
-                name="fieldType"
-                label="Saha Tipi"
-                rules={[{ required: true, message: 'Lütfen saha tipini seçin' }]}
-                extra={fieldTypesLoading ? "Saha tipleri yükleniyor..." : fieldTypes.length === 0 && !fieldTypesLoading ? "Saha tipi verisi bulunamadı" : ""}
-              >
-                <Select 
-                  placeholder="Saha tipi seçin" 
-                  loading={fieldTypesLoading}
-                  disabled={fieldTypes.length === 0 || fieldTypesError}
-                  notFoundContent={fieldTypes.length === 0 ? "Saha tipi verisi bulunamadı" : null}
-                >
-                  {fieldTypes && fieldTypes.length > 0 ? (
-                    fieldTypes.map(type => (
-                      <Option key={type._id} value={type.name}>{type.name}</Option>
-                    ))
-                  ) : null}
-                </Select>
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                name="fieldName"
-                label="Saha Adı"
-                rules={[{ required: true, message: 'Lütfen saha adını girin' }]}
-              >
-                <Input placeholder="Saha adını girin" />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={24}>
-            <Col span={12}>
-              <Form.Item
-                name="loc"
-                label="LOC"
-              >
-                <Input placeholder="LOC değerini girin" />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                name="sir"
-                label="SIR"
-              >
-                <Input placeholder="SIR değerini girin" />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Divider />
-          
-          <Row gutter={24}>
-            <Col span={24}>
-              <Title level={4} className="mb-4">
-                <UserOutlined className="mr-2" />
-                Proje Sorumluları
-              </Title>
-            </Col>
-          </Row>
-
-          <Row gutter={24}>
-            <Col span={12}>
-              <Form.Item
-                name="supervisor"
-                label="Supervisor"
-                rules={[{ required: true, message: 'Lütfen supervisor seçin' }]}
-              >
-                <Select 
-                  placeholder="Supervisor seçin" 
-                  loading={isLoadingUsers}
-                  notFoundContent={supervisors.length === 0 ? "Supervisor verisi bulunamadı" : null}
-                >
-                  {supervisors && supervisors.length > 0 ? (
-                    supervisors.map(user => (
-                      <Option key={user._id} value={user._id}>{user.fullName}</Option>
-                    ))
-                  ) : null}
-                </Select>
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                name="contractor"
-                label="Taşeron"
-                rules={[{ required: true, message: 'Lütfen taşeron seçin' }]}
-              >
-                <Select 
-                  placeholder="Taşeron seçin" 
-                  loading={isLoadingUsers}
-                  notFoundContent={contractors.length === 0 ? "Taşeron verisi bulunamadı" : null}
-                >
-                  {contractors && contractors.length > 0 ? (
-                    contractors.map(user => (
-                      <Option key={user._id} value={user._id}>{user.fullName}</Option>
-                    ))
-                  ) : null}
-                </Select>
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Divider />
-          
-          <Row gutter={24}>
-            <Col span={24}>
-              <Title level={4} className="mb-4">
-                <FieldTimeOutlined className="mr-2" />
-                Zaman Bilgisi
-              </Title>
-            </Col>
-          </Row>
-
-          <Row gutter={24}>
-            <Col span={12}>
-              <Form.Item
-                name="date"
-                label="Proje Tarihi"
-                rules={[{ required: true, message: 'Lütfen proje tarihini seçin' }]}
-              >
-                <DatePicker 
-                  style={{ width: '100%' }} 
-                  format="DD/MM/YYYY" 
-                  placeholder="Tarih seçin"
-                  locale={locale}
-                />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                name="status"
-                label="Başlangıç Durumu"
-                initialValue="İşlemde"
-              >
-                <Select>
-                  <Option value="İşlemde">İşlemde</Option>
-                  <Option value="Beklemede">Beklemede</Option>
-                </Select>
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Divider />
-
-          <Form.Item className="mt-6 flex justify-end">
-            <Space>
-              <Button 
-                type="default"
-                onClick={() => navigate(-1)}
-              >
-                İptal
-              </Button>
-              <Button 
-                type="primary" 
-                htmlType="submit" 
-                icon={<SaveOutlined />}
-                loading={submitting}
-                disabled={clusterStatus === 'failed' || cities.length === 0}
-              >
-                Projeyi Kaydet
-              </Button>
-            </Space>
-          </Form.Item>
-        </Form>
+                  Projeyi Kaydet
+                </Button>
+              </Space>
+            </Form.Item>
+          </Form>
+        </Card>
       </Card>
     </div>
   );

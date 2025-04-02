@@ -4,6 +4,7 @@ import Home from "../pages/Home";
 import Projects from "../pages/Projects";
 import ProjectNew from "../pages/ProjectNew";
 import ProjectDetail from "../pages/ProjectDetail";
+import ProjectEdit from "../pages/ProjectEdit";
 import Login from "../pages/Login";
 import NotFound from "../pages/NotFound";
 import PrivateRoute from "./PrivateRoute";
@@ -18,6 +19,7 @@ import StockMovements from '../pages/StockMovements';
 import StockTransfer from '../pages/StockTransfer';
 import PozList from '../pages/PozList';
 import Reports from '../pages/Reports';
+import SearchResults from "../pages/SearchResults";
 
 const AppRouter = () => {
   const user = useSelector((state) => state.user.user);
@@ -43,8 +45,10 @@ const AppRouter = () => {
       <Route element={<PrivateRoute />}>
         <Route path="/" element={<Home />} />
         <Route path="/projects" element={<Projects />} />
+        <Route path="/projects/search" element={<SearchResults />} />
         <Route path="/projects/new" element={<ProjectNew />} />
         <Route path="/projects/:id" element={<ProjectDetail />} />
+        <Route path="/projects/:id/edit" element={<ProjectEdit />} />
         <Route path="/profile" element={<UserProfile />} />
         <Route path="/profile/:id" element={<UserDetail />} />
         <Route path="/ayarlar/kullanıcılar" element={<UserList />} />

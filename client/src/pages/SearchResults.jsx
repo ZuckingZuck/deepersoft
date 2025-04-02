@@ -1,76 +1,44 @@
-import React, { useEffect, useState } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
-import { fetchProjects } from "../redux/projectSlice";
+import { fetchSystemData } from "../redux/systemSlice";
+import { fetchAllUsers } from "../redux/userSlice";
+import { fetchAllClusters } from "../redux/clusterSlice";
 import { 
   Table, 
-  Tooltip, 
   Button, 
-  message, 
-  Tag, 
   Card, 
   Space, 
-  Tabs, 
-  Badge, 
-  Avatar, 
+  Tag, 
   Typography,
-  Spin,
-  Modal,
   Form,
   Input,
   Select,
   DatePicker,
-  InputNumber,
   Row,
   Col,
-  Divider,
-  Popover
+  Avatar,
+  message,
+  Spin
 } from "antd";
 import { 
-  CheckCircleOutlined, 
-  CloseCircleOutlined, 
-  PlusOutlined, 
+  SearchOutlined, 
+  ClearOutlined,
   EyeOutlined,
   UserOutlined,
   TeamOutlined,
   ClockCircleOutlined,
   EnvironmentOutlined,
-  ProjectOutlined,
-  SearchOutlined,
-  FilterOutlined,
-  ClearOutlined,
-  InfoCircleOutlined
+  ArrowLeftOutlined,
+  CheckCircleOutlined,
+  ProjectOutlined
 } from "@ant-design/icons";
 import api from "../utils/api";
 import moment from "moment";
 
-const { Title, Text } = Typography;
-const { TabPane } = Tabs;
+const { Title } = Typography;
 const { Option } = Select;
 const { RangePicker } = DatePicker;
-
-const calculateElapsedTime = (createdAt) => {
-  const startDate = new Date(createdAt);
-  const now = new Date();
-  const diffInMs = now - startDate;
-  const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
-
-  if (diffInDays === 0) return "Bugün";
-  if (diffInDays === 1) return "Dün";
-  return `${diffInDays} gün`;
-};
-
-// Status URL parametrelerini veritabanı değerleriyle eşleştiren obje
-const statusMapping = {
-  'islemde': 'İşlemde',
-  'onayda': 'Onayda',
-  'incelendi': 'İncelendi',
-  'montaj-tamam': 'Montaj Tamam',
-  'tamamlandi': 'Tamamlandı',
-  'islah-duzenleme': 'Islah ve Düzenleme',
-  'beklemede': 'Beklemede',
-  'arsivde': 'Arşivde'
-};
 
 // Durum renk ve ikonları
 const statusConfig = {
@@ -84,88 +52,66 @@ const statusConfig = {
   'Arşivde': { color: 'gray', icon: <CheckCircleOutlined /> }
 };
 
-const StatCard = ({ title, value, icon, color }) => (
-  <div className="bg-white p-4 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300">
-    <div className="flex flex-col items-center">
-      <Badge count={value} className="mb-2">
-        <div className={`p-3 rounded-xl bg-${color}-50`}>
-          {icon}
-        </div>
-      </Badge>
-      <div className="text-sm text-gray-500">{title}</div>
-    </div>
-  </div>
-);
+const calculateElapsedTime = (createdAt) => {
+  const startDate = new Date(createdAt);
+  const now = new Date();
+  const diffInMs = now - startDate;
+  const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
 
-const Projects = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const statusParam = searchParams.get("status") || "islemde";
+  if (diffInDays === 0) return "Bugün";
+  if (diffInDays === 1) return "Dün";
+  return `${diffInDays} gün`;
+};
+
+const SearchResults = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { projects, loading } = useSelector((state) => state.project);
-  const user = useSelector((state) => state.user.user);
-  const [searchForm] = Form.useForm();
-  const [searchVisible, setSearchVisible] = useState(false);
-  const [tableData, setTableData] = useState([]);
+  const [form] = Form.useForm();
+  const [loading, setLoading] = useState(false);
+  const [results, setResults] = useState([]);
 
-  // Yetki kontrolü
-  const canCreateProject = user && (user.userType === 'Sistem Yetkilisi' || user.userType === 'Supervisor');
+  // Redux state'lerini çek
+  const { fieldTypeList } = useSelector((state) => state.system);
+  const { contractors, supervisors } = useSelector((state) => state.user);
+  const { cities, allClusters } = useSelector((state) => state.cluster);
 
+  // Component mount olduğunda gerekli verileri yükle
   useEffect(() => {
-    dispatch(fetchProjects());
+    dispatch(fetchSystemData());
+    dispatch(fetchAllUsers());
+    dispatch(fetchAllClusters());
   }, [dispatch]);
 
-  useEffect(() => {
-    if (projects) {
-      let filteredData = [...projects];
-      const dbStatus = statusMapping[statusParam] || 'İşlemde';
-      filteredData = filteredData.filter(project => project.status === dbStatus);
-      setTableData(filteredData);
-    }
-  }, [projects, statusParam]);
-
   const handleSearch = async (values) => {
-    setSearchVisible(true);
+    setLoading(true);
     try {
-      // URL parametrelerini oluştur
       const params = new URLSearchParams();
       Object.keys(values).forEach(key => {
         if (values[key]) {
-          if (key === 'startDate' || key === 'endDate') {
-            params.append(key, values[key].format('YYYY-MM-DD'));
+          if (key === 'dateRange' && values[key]) {
+            params.append('startDate', values[key][0].format('YYYY-MM-DD'));
+            params.append('endDate', values[key][1].format('YYYY-MM-DD'));
           } else {
             params.append(key, values[key]);
           }
         }
       });
 
-      // API'ye istek at
       const response = await api.get(`/api/project/search?${params.toString()}`);
-      setTableData(response.data);
-      setSearchVisible(false);
-      searchForm.resetFields();
+      setResults(response.data);
     } catch (error) {
       message.error('Arama sırasında bir hata oluştu');
       console.error('Arama hatası:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleReset = () => {
-    searchForm.resetFields();
-    setSearchParams(new URLSearchParams());
+    form.resetFields();
+    setResults([]);
   };
 
-  // Tab değiştiğinde URL parametresini güncelle
-  const handleTabChange = (key) => {
-    setSearchParams({ status: key });
-  };
-
-  // Başlık için görünen durum metnini belirle
-  const getDisplayStatus = () => {
-    return statusMapping[statusParam] || 'İşlemde';
-  };
-
-  // Durum için renk ve ikon ata
   const getStatusTag = (status) => {
     const config = statusConfig[status] || { color: 'default', icon: null };
     return (
@@ -228,14 +174,14 @@ const Projects = () => {
             <Avatar size="small" icon={<UserOutlined />} className="bg-blue-500 mr-2" />
             <div>
               <div className="text-xs font-semibold">Supervisor</div>
-              <div>{record.supervisor && record.supervisor.fullName ? record.supervisor.fullName : "Atanmamış"}</div>
+              <div>{record.supervisor?.fullName || "Atanmamış"}</div>
             </div>
           </div>
           <div className="flex items-center">
             <Avatar size="small" icon={<TeamOutlined />} className="bg-green-500 mr-2" />
             <div>
               <div className="text-xs font-semibold">Taşeron</div>
-              <div>{record.contractor && record.contractor.fullName ? record.contractor.fullName : "Atanmamış"}</div>
+              <div>{record.contractor?.fullName || "Atanmamış"}</div>
             </div>
           </div>
         </Space>
@@ -276,21 +222,6 @@ const Projects = () => {
     },
   ];
 
-  // Durumları tab olarak göster
-  const statusTabs = Object.entries(statusMapping).map(([key, value]) => {
-    const config = statusConfig[value] || {};
-    return (
-      <TabPane 
-        tab={
-          <span>
-            {config.icon} {value}
-          </span>
-        } 
-        key={key}
-      />
-    );
-  });
-
   return (
     <div className="p-6 max-w-7xl mx-auto bg-gray-50 min-h-screen">
       <Card className="shadow-lg rounded-2xl border-0">
@@ -299,92 +230,22 @@ const Projects = () => {
             <div className="p-3 bg-blue-100 rounded-xl mr-4">
               <ProjectOutlined className="text-2xl text-blue-600" />
             </div>
-            <Title level={2} className="m-0 text-gray-800">Projeler</Title>
+            <Title level={2} className="m-0 text-gray-800">Proje Arama</Title>
           </div>
-          <Space>
-            <Button 
-              icon={<SearchOutlined />}
-              className="rounded-lg hover:bg-blue-50"
-              onClick={() => navigate('/projects/search')}
-            >
-              Detaylı Arama
-            </Button>
-            {canCreateProject && (
-              <Button 
-                type="primary" 
-                icon={<PlusOutlined />} 
-                onClick={() => navigate('/projects/new')}
-                size="large"
-                className="bg-blue-500 hover:bg-blue-600 shadow-md rounded-lg"
-              >
-                Yeni Proje Ekle
-              </Button>
-            )}
-          </Space>
+          <Button 
+            icon={<ArrowLeftOutlined />} 
+            onClick={() => navigate('/projects')}
+            className="rounded-lg"
+          >
+            Projelere Dön
+          </Button>
         </div>
 
-        <Tabs 
-          activeKey={statusParam} 
-          onChange={handleTabChange}
-          type="card"
-          className="mb-4 rounded-lg overflow-hidden"
-        >
-          {statusTabs}
-        </Tabs>
-
-        {loading ? (
-          <div className="flex justify-center items-center py-12">
-            <Spin size="large" tip="Projeler yükleniyor..." />
-          </div>
-        ) : projects.length === 0 ? (
-          <div className="text-center py-12 bg-gray-50 rounded-xl">
-            <InfoCircleOutlined className="text-4xl text-gray-400 mb-4" />
-            <Text type="secondary" className="text-lg">
-              Bu durumda herhangi bir proje bulunamadı.
-            </Text>
-          </div>
-        ) : (
-          <Table
-            columns={columns}
-            dataSource={tableData}
-            rowKey="_id"
-            bordered={false}
-            loading={loading}
-            pagination={{ 
-              pageSize: 10, 
-              position: ["bottomCenter"],
-              showSizeChanger: true,
-              pageSizeOptions: ['5', '10', '20', '50'],
-              showTotal: (total, range) => `${range[0]}-${range[1]} / ${total} proje`,
-              className: "mt-4"
-            }}
-            size="middle"
-            scroll={{ x: 1100 }}
-            rowClassName="hover:bg-blue-50 transition-colors"
-            className="rounded-lg overflow-hidden"
-          />
-        )}
-      </Card>
-
-      <Modal
-        title={
-          <div className="flex items-center">
-            <SearchOutlined className="text-blue-500 mr-2" />
-            <span>Arama ve Filtreleme</span>
-          </div>
-        }
-        open={searchVisible}
-        onCancel={() => setSearchVisible(false)}
-        footer={null}
-        className="rounded-lg"
-        width={800}
-      >
         <Form
-          form={searchForm}
+          form={form}
           layout="vertical"
           onFinish={handleSearch}
-          initialValues={searchParams}
-          className="mt-4"
+          className="mb-6"
         >
           <Row gutter={[16, 16]}>
             <Col span={8}>
@@ -409,8 +270,9 @@ const Projects = () => {
             <Col span={8}>
               <Form.Item name="fieldType" label="Saha Tipi">
                 <Select placeholder="Saha tipine göre filtrele" allowClear className="rounded-lg">
-                  <Option value="Yeraltı">Yeraltı</Option>
-                  <Option value="Havai">Havai</Option>
+                  {fieldTypeList.map(type => (
+                    <Option key={type._id} value={type.name}>{type.name}</Option>
+                  ))}
                 </Select>
               </Form.Item>
             </Col>
@@ -419,12 +281,20 @@ const Projects = () => {
           <Row gutter={[16, 16]}>
             <Col span={8}>
               <Form.Item name="city" label="Şehir">
-                <Input placeholder="Şehre göre ara" className="rounded-lg" />
+                <Select placeholder="Şehre göre ara" allowClear className="rounded-lg">
+                  {cities.map(city => (
+                    <Option key={city} value={city}>{city}</Option>
+                  ))}
+                </Select>
               </Form.Item>
             </Col>
             <Col span={8}>
               <Form.Item name="clusterName" label="Küme Adı">
-                <Input placeholder="Küme adına göre ara" className="rounded-lg" />
+                <Select placeholder="Küme adına göre ara" allowClear className="rounded-lg">
+                  {allClusters.map(cluster => (
+                    <Option key={cluster._id} value={cluster.name}>{cluster.name}</Option>
+                  ))}
+                </Select>
               </Form.Item>
             </Col>
             <Col span={8}>
@@ -455,12 +325,24 @@ const Projects = () => {
           <Row gutter={[16, 16]}>
             <Col span={8}>
               <Form.Item name="contractor" label="Taşeron">
-                <Input placeholder="Taşerona göre ara" className="rounded-lg" />
+                <Select placeholder="Taşerona göre ara" allowClear className="rounded-lg">
+                  {contractors.map(contractor => (
+                    <Option key={contractor._id} value={contractor._id}>
+                      {contractor.fullName}
+                    </Option>
+                  ))}
+                </Select>
               </Form.Item>
             </Col>
             <Col span={8}>
               <Form.Item name="supervisor" label="Supervisor">
-                <Input placeholder="Supervisor'a göre ara" className="rounded-lg" />
+                <Select placeholder="Supervisor'a göre ara" allowClear className="rounded-lg">
+                  {supervisors.map(supervisor => (
+                    <Option key={supervisor._id} value={supervisor._id}>
+                      {supervisor.fullName}
+                    </Option>
+                  ))}
+                </Select>
               </Form.Item>
             </Col>
             <Col span={8}>
@@ -484,6 +366,7 @@ const Projects = () => {
                   type="primary" 
                   icon={<SearchOutlined />} 
                   htmlType="submit"
+                  loading={loading}
                   className="bg-blue-500 hover:bg-blue-600 rounded-lg shadow-md"
                 >
                   Ara
@@ -492,9 +375,25 @@ const Projects = () => {
             </Col>
           </Row>
         </Form>
-      </Modal>
+
+        {results.length > 0 && (
+          <Table
+            columns={columns}
+            dataSource={results}
+            rowKey="_id"
+            loading={loading}
+            pagination={{ 
+              pageSize: 10,
+              showSizeChanger: true,
+              showTotal: (total) => `Toplam ${total} sonuç`
+            }}
+            scroll={{ x: 1100 }}
+            className="rounded-lg overflow-hidden"
+          />
+        )}
+      </Card>
     </div>
   );
 };
 
-export default Projects;
+export default SearchResults; 

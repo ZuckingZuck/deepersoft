@@ -1,12 +1,14 @@
 const router = require("express").Router();
 const { CreateProject, GetProjects, GetProjectDetail, DeleteProject, AddProjectLog, DeleteProjectLog, 
-    AddProjectPoz, ChangeProjectStatus, DeleteProjectPoz, AddProjectDocument, DeleteProjectDocument } = require("../controller/project");
+    AddProjectPoz, ChangeProjectStatus, DeleteProjectPoz, AddProjectDocument, DeleteProjectDocument,
+    SearchProject } = require("../controller/project");
 const requireAuth = require("../middleware/authControl"); 
 
 
 router.use(requireAuth);
 //Project
 router.get("/", GetProjects);
+router.get("/search", SearchProject);
 router.get("/:id", GetProjectDetail);
 
 router.post("/", CreateProject);
