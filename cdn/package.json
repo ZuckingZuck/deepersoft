@@ -1,7 +1,7 @@
 {
   "name": "cdn",
   "version": "1.0.0",
-  "description": "DeepSoft projesi için CDN sunucu",
+  "description": "AYCTRACKING projesi için CDN sunucu",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",

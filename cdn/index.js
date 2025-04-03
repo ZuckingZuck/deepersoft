@@ -22,7 +22,7 @@ app.use('/files', express.static(path.join(__dirname, 'uploads')));
 // Ana route
 app.get('/', (req, res) => {
   res.json({
-    message: 'DeepSoft CDN API',
+    message: 'AYCTRACKING CDN API',
     version: '1.0.0'
   });
 });

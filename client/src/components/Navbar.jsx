@@ -150,7 +150,7 @@ export default function Navbar() {
     <nav className="bg-gradient-to-r from-gray-900 to-gray-800 text-white shadow-md">
       {/* Mobil hamburger menü */}
       <div className="md:hidden flex justify-between items-center p-4">
-        <div className="font-bold text-xl">DeepSoft</div>
+        <div className="font-bold text-xl">AYCTRACKING</div>
         <button 
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           className="text-white focus:outline-none"
@@ -236,7 +236,7 @@ export default function Navbar() {
       {/* Masaüstü menü */}
       <div className="hidden md:flex justify-between items-center px-6 py-3">
         <div className="flex items-center space-x-1">
-          <div className="font-bold text-xl mr-6">DeepSoft</div>
+          <div className="font-bold text-xl mr-6">AYCTRACKING</div>
           <ul className="flex space-x-1">
             {filteredMenuItems.map((item, index) => (
               <li key={index} className="relative">

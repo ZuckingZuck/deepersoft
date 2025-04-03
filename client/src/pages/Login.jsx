@@ -98,7 +98,7 @@ const Login = () => {
             <Title level={3} className="text-white m-0 flex items-center">
               <LoginOutlined className="mr-3 text-2xl" /> Giriş Yap
             </Title>
-            <p className="m-0 mt-2 text-blue-100 text-lg">DeepSoft Yönetim Sistemine hoş geldiniz</p>
+            <p className="m-0 mt-2 text-blue-100 text-lg">AYCTRACKING Yönetim Sistemine hoş geldiniz</p>
           </div>
 
           <div className="p-8">
@@ -162,7 +162,7 @@ const Login = () => {
             </Form>
 
             <div className="text-gray-500 text-sm text-center mt-8 border-t border-gray-100 pt-6">
-              <p className="font-medium">© 2023 DeepSoft</p>
+              <p className="font-medium">© 2025 AYCTRACKING</p>
               <p className="text-gray-400">Tüm Hakları Saklıdır</p>
             </div>
           </div>
