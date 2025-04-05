@@ -92,6 +92,8 @@ const generateExcel = async (projects, res) => {
         { header: 'Mutabakat', key: 'MTBKT', width: 10 },
         { header: 'Keşif', key: 'KSF', width: 10 },
         { header: 'Barkod', key: 'BRKD', width: 10 },
+        { header: 'Toplam Fiyat', key: 'totalPrice', width: 20 },
+        { header: 'Taşeron Toplam', key: 'totalContractorPrice', width: 20 },
         { header: 'Oluşturulma Tarihi', key: 'createdAt', width: 20 },
         { header: 'Son Güncelleme', key: 'updatedAt', width: 20 }
     ];
@@ -125,6 +127,8 @@ const generateExcel = async (projects, res) => {
             MTBKT: project.MTBKT ? '✓' : '✗',
             KSF: project.KSF ? '✓' : '✗',
             BRKD: project.BRKD ? '✓' : '✗',
+            totalPrice: project.totalPrice,
+            totalContractorPrice: project.totalContractorPrice,
             createdAt: project.createdAt ? new Date(project.createdAt).toLocaleDateString('tr-TR') : '-',
             updatedAt: project.updatedAt ? new Date(project.updatedAt).toLocaleDateString('tr-TR') : '-'
         });

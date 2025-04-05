@@ -208,7 +208,7 @@ const AddProjectPoz = async (req, res) => {
 
         //Projede kayıtlı total price üzerine ekleme yap.
         project.totalPrice += poz.price * amount;
-        project.contractorTotalPrice += constractorPozPrice.price * amount;
+        project.totalContractorPrice += constractorPozPrice.price * amount;
 
         // Yeni ProjectPoz oluştur
         const projectPoz = new ProjectPozDB({
