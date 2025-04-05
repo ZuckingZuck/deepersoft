@@ -14,6 +14,7 @@ import {
 } from '@ant-design/icons';
 import { Badge, Typography, Spin } from 'antd';
 import api from '../../utils/api';
+import { useSelector } from 'react-redux';
 
 const { Text } = Typography;
 
@@ -113,7 +114,7 @@ const statusConfig = [
 const Status = () => {
   const [statuses, setStatuses] = useState(statusConfig);
   const [loading, setLoading] = useState(true);
-
+  const user = useSelector((state) => state.user.user);
   useEffect(() => {
     const fetchProjectCounts = async () => {
       setLoading(true);
@@ -150,26 +151,29 @@ const Status = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-          {statuses.map((status) => (
-            <div className="status-card-wrapper h-full" key={status.path}>
-              <NavLink to={status.path} className="block h-full">
-                <Badge 
-                  count={status.count} 
-                  overflowCount={99} 
-                  offset={[-10, -10]}
-                >
-                  <div className={`flex flex-col items-center justify-center p-4 ${status.bgColor} rounded-lg hover:shadow-md transition-all duration-300 border border-transparent hover:border-gray-200 h-full aspect-[4/3]`}>
-                    <div className={`text-3xl ${status.iconColor} mb-3`}>
-                      {status.icon}
+          {
+            statuses.map((status) => {
+              if(user.userType !== "Sistem Yetkilisi" && status.name === "Yeni Proje") return;
+              return (<div className="status-card-wrapper h-full" key={status.path}>
+                <NavLink to={status.path} className="block h-full">
+                  <Badge 
+                    count={status.count} 
+                    overflowCount={99} 
+                    offset={[-10, -10]}
+                  >
+                    <div className={`flex flex-col items-center justify-center p-4 ${status.bgColor} rounded-lg hover:shadow-md transition-all duration-300 border border-transparent hover:border-gray-200 h-full aspect-[4/3]`}>
+                      <div className={`text-3xl ${status.iconColor} mb-3`}>
+                        {status.icon}
+                      </div>
+                      <Text strong className="text-center text-gray-800 line-clamp-1 w-full">
+                        {status.name}
+                      </Text>
                     </div>
-                    <Text strong className="text-center text-gray-800 line-clamp-1 w-full">
-                      {status.name}
-                    </Text>
-                  </div>
-                </Badge>
-              </NavLink>
-            </div>
-          ))}
+                  </Badge>
+                </NavLink>
+              </div>)
+            })
+          }
         </div>
       )}
 

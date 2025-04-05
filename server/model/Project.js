@@ -93,6 +93,14 @@ const ProjectSchema = mongoose.Schema({
     BRKD: {
         type: Boolean,
         default: false
+    },
+    totalPrice: {
+        type: Number,
+        default: 0
+    },
+    totalContractorPrice: {
+        type: Number,
+        default: 0
     }
 }, {timestamps: true})
 

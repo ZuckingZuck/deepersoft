@@ -6,6 +6,7 @@ const StockDB = require("../model/Stock");
 const PozDB = require("../model/Poz");
 const ContractorPozPriceDB = require("../model/ContractorPozPrice");
 const fetch = require('node-fetch');
+const ContractorPozPrice = require("../model/ContractorPozPrice");
 
 //Project
 const CreateProject = async (req, res) => {
@@ -205,6 +206,10 @@ const AddProjectPoz = async (req, res) => {
             return res.status(404).json({ message: "Proje bulunamadı" });
         }
 
+        //Projede kayıtlı total price üzerine ekleme yap.
+        project.totalPrice += poz.price * amount;
+        project.contractorTotalPrice += constractorPozPrice.price * amount;
+
         // Yeni ProjectPoz oluştur
         const projectPoz = new ProjectPozDB({
             projectId,
@@ -216,6 +221,7 @@ const AddProjectPoz = async (req, res) => {
             contractorPrice: constractorPozPrice.price
         });
 
+        await project.save();
         await projectPoz.save();
 
         // Stok işlemleri
@@ -252,19 +258,23 @@ const DeleteProjectPoz = async (req, res) => {
     try {
         const user = req.user;
         const projectPoz = await ProjectPozDB.findById(req.params.id)
-            .populate('project');
+            .populate("pozId", "priceType");
 
+        const currentProject = await ProjectDB.findById(projectPoz.projectId)
+        currentProject.totalPrice -= projectPoz.price * projectPoz.quantity;
+        currentProject.contractorTotalPrice -= projectPoz.contractorPrice * projectPoz.quantity;
+        console.log("projectpoz", projectPoz);
         if (!projectPoz) {
             return res.status(404).json({ message: "Poz bulunamadı" });
         }
 
         // Yetki kontrolü
-        if (user.userType === 'Taşeron' && projectPoz.project.contractor.toString() !== user._id.toString()) {
+        if (user.userType === 'Taşeron' && currentProject.contractor.toString() !== user._id.toString()) {
             return res.status(403).json({ message: "Bu pozu silme yetkiniz yok" });
         }
 
         // Eğer malzeme ise ve miktar varsa, stok işlemi yap
-        if (projectPoz.poz.priceType.includes("M") && projectPoz.amount) {
+        if (projectPoz.pozId.priceType.includes("M") && projectPoz.amount) {
             // Kullanıcının stoğunu bul
             const userStock = await StockDB.findOne({
                 user: projectPoz.user,
@@ -279,7 +289,7 @@ const DeleteProjectPoz = async (req, res) => {
             } else {
                 // Stok yoksa yeni stok oluştur
                 await StockDB.create({
-                    user: projectPoz.project.contractor,
+                    user: currentProject.contractor,
                     poz: projectPoz.poz._id,
                     amount: projectPoz.amount
                 });
@@ -288,6 +298,7 @@ const DeleteProjectPoz = async (req, res) => {
         }
 
         // Pozu sil
+        await currentProject.save();
         await ProjectPozDB.findByIdAndDelete(req.params.id);
         res.status(200).json({ message: "Poz başarıyla silindi" });
     } catch (error) {
