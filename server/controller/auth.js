@@ -18,7 +18,7 @@ const CreateUser = async (req, res) => {
             userType,
             fullName,
             userName,
-            password: hashedPassword,
+            password: password,
             phone,
             email
         });
@@ -39,7 +39,7 @@ const LoginUser = async (req, res) => {
             return res.status(400).json({ message: "Geçersiz kullanıcı adı veya şifre." });
         }
 
-        const isMatch = await bcrypt.compare(password, user.password);
+        const isMatch = password === user.password ? true : false;
         if (!isMatch) {
             return res.status(400).json({ message: "Geçersiz kullanıcı adı veya şifre." });
         }
@@ -64,7 +64,7 @@ const GetUsers = async (req, res) => {
         const filter = userType ? { userType } : {};
         
         // Password alanını çıkararak kullanıcıları getir
-        const users = await User.find(filter).select('-password');
+        const users = await User.find(filter);
         
         res.status(200).json(users);
     } catch (error) {

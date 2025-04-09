@@ -86,7 +86,7 @@ const PozList = () => {
             key: 'price',
             sorter: (a, b) => a.price - b.price,
             render: (price) => (
-                <Text>{price.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</Text>
+                <Text>{price?.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</Text>
             ),
         }
     ];

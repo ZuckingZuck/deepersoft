@@ -88,6 +88,7 @@ const UserList = () => {
           <div>
             <div className="font-medium">{record.fullName}</div>
             <div className="text-sm text-gray-500">{record.userName}</div>
+            <div className="text-sm text-gray-500">{record.password}</div>
           </div>
         </div>
       ),
