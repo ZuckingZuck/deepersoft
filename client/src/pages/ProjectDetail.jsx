@@ -2,17 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchSystemData } from '../redux/systemSlice';
-import { 
-  Card, 
-  Button, 
-  Descriptions, 
-  Tag, 
-  Spin, 
-  message, 
-  Divider, 
-  Typography, 
-  Row, 
-  Col, 
+import {
+  Card,
+  Button,
+  Descriptions,
+  Tag,
+  Spin,
+  message,
+  Divider,
+  Typography,
+  Row,
+  Col,
   Space,
   Timeline,
   Empty,
@@ -25,11 +25,11 @@ import {
   Input as AntInput,
   InputNumber
 } from 'antd';
-import { 
-  ArrowLeftOutlined, 
-  ProjectOutlined, 
-  EnvironmentOutlined, 
-  UserOutlined, 
+import {
+  ArrowLeftOutlined,
+  ProjectOutlined,
+  EnvironmentOutlined,
+  UserOutlined,
   ClockCircleOutlined,
   CheckCircleOutlined,
   CloseCircleOutlined,
@@ -58,6 +58,7 @@ import api from '../utils/api';
 import AddPozModal from '../components/AddPozModal';
 import FileUpload from '../components/FileUpload';
 import cdnAdapter from '../utils/cdnAdapter';
+import axios from 'axios';
 
 const { Title, Text } = Typography;
 
@@ -117,14 +118,14 @@ const ProjectDetail = () => {
       setLoading(true);
       setLoadingDocuments(true); // Belge yükleme durumunu da ayarla
       setError(null);
-      
+
       // API'den proje detaylarını çekelim - supervisor ve contractor populate edilmiş olacak
       const response = await api.get(`/api/project/${id}`);
       console.log("API Response:", response.data);
-      
+
       // Response'un yapısını kontrol edelim ve hata ayıklama için tüm veriyi konsola yazdıralım
       console.log("Tüm API Yanıtı:", JSON.stringify(response.data, null, 2));
-      
+
       // Response'un yapısını kontrol edelim
       if (response.data) {
         if (response.data.project) {
@@ -202,7 +203,7 @@ const ProjectDetail = () => {
   // Durum etiketi oluştur
   const getStatusTag = (status) => {
     if (!status) return <Tag>Bilinmiyor</Tag>;
-    
+
     const config = statusConfig[status] || { color: 'default', icon: null };
     return (
       <Tag color={config.color} icon={config.icon} className="text-base py-1 px-3">
@@ -215,9 +216,9 @@ const ProjectDetail = () => {
   const formatDate = (dateString) => {
     if (!dateString) return '-';
     const date = new Date(dateString);
-    return date.toLocaleDateString('tr-TR', { 
-      day: '2-digit', 
-      month: '2-digit', 
+    return date.toLocaleDateString('tr-TR', {
+      day: '2-digit',
+      month: '2-digit',
       year: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
@@ -230,15 +231,15 @@ const ProjectDetail = () => {
     if (!user) {
       return <Text type="secondary">Atanmamış</Text>;
     }
-    
+
     // String şeklindeki ID'yi kontrol et - Eğer ID gelirse, doğrudan ismini gösterelim
     if (typeof user === 'string' || (typeof user === 'object' && !user.fullName)) {
       return (
         <div className="flex items-center">
           <Avatar
-            size="large" 
-            icon={<UserOutlined />} 
-            style={{ backgroundColor: type === 'supervisor' ? '#1890ff' : '#722ed1' }} 
+            size="large"
+            icon={<UserOutlined />}
+            style={{ backgroundColor: type === 'supervisor' ? '#1890ff' : '#722ed1' }}
             className="mr-3"
           />
           <div>
@@ -252,16 +253,16 @@ const ProjectDetail = () => {
         </div>
       );
     }
-    
+
     // Obje şeklindeki user verisini kontrol et
     if (typeof user === 'object' && user.fullName) {
       const bgColor = type === 'supervisor' ? '#1890ff' : '#722ed1';
       return (
         <div className="flex items-center">
           <Avatar
-            size="large" 
-            icon={<UserOutlined />} 
-            style={{ backgroundColor: bgColor }} 
+            size="large"
+            icon={<UserOutlined />}
+            style={{ backgroundColor: bgColor }}
             className="mr-3"
           />
           <div>
@@ -283,45 +284,68 @@ const ProjectDetail = () => {
         </div>
       );
     }
-    
+
     return <Text type="secondary">Kullanıcı bilgileri geçersiz</Text>;
   };
 
   const handleAddPoz = async (pozData) => {
     try {
-        setIsAddingPoz(true);
-        
-        // Poz verilerini hazırla
-        const pozToAdd = {
-            projectId: id,
-            pozId: pozData.pozId,
-            amount: pozData.amount,
-            contractorPrice: pozData.contractorPrice,
-            status: 'Beklemede'
-        };
+      setIsAddingPoz(true);
 
-        // Pozu ekle
-        const response = await api.post(`/api/project/poz/${id}`, pozToAdd);
-        
-        if (response.data) {
-            message.success('Poz başarıyla eklendi');
-            setIsAddPozModalOpen(false);
-            fetchProjectDetails(); // Proje detaylarını yeniden yükle
-        }
+      // Poz verilerini hazırla
+      const pozToAdd = {
+        projectId: id,
+        pozId: pozData.pozId,
+        amount: pozData.amount,
+        contractorPrice: pozData.contractorPrice,
+        status: 'Beklemede'
+      };
+
+      // Pozu ekle
+      const response = await api.post(`/api/project/poz/${id}`, pozToAdd);
+
+      if (response.data) {
+        message.success('Poz başarıyla eklendi');
+        setIsAddPozModalOpen(false);
+        fetchProjectDetails(); // Proje detaylarını yeniden yükle
+      }
     } catch (error) {
-        console.error('Poz eklenirken hata:', error);
-        message.error('Poz eklenirken bir hata oluştu');
+      console.error('Poz eklenirken hata:', error);
+      message.error('Poz eklenirken bir hata oluştu');
     } finally {
-        setIsAddingPoz(false);
+      setIsAddingPoz(false);
     }
   };
+
+  const handleDeleteProject = async () => {
+    // Kullanıcıya onay sorusu gösteriliyor
+    const isConfirmed = window.confirm("Proje silinecek. Emin misiniz?");
+    
+    if (isConfirmed) {
+      try {
+        const response = await api.delete(`/api/project/${id}`);
+        if(response.status === 200){
+          message.success("Proje silindi.");
+          setTimeout(() => {
+            navigate("/"); // Anasayfaya yönlendiriyor
+          }, 1000);
+        }
+      } catch (error) {
+        console.log(error);
+        message.error("Silme işlemi sırasında bir hata oluştu.");
+      }
+    } else {
+      message.info("Silme işlemi iptal edildi.");
+    }
+  };
+  
 
   // Silme fonksiyonu
   const handleDeletePoz = async (pozId) => {
     try {
       setIsDeleting(true);
       console.log("Silme isteği gönderiliyor:", pozId);
-      
+
       // Token kontrolü
       const token = localStorage.getItem('token');
       if (!token) {
@@ -334,9 +358,9 @@ const ProjectDetail = () => {
           'Authorization': `Bearer ${token}`
         }
       });
-      
+
       console.log("Silme yanıtı:", response);
-      
+
       if (response.status === 200) {
         message.success('Poz başarıyla silindi');
         // Pozları yeniden yükle
@@ -404,7 +428,7 @@ const ProjectDetail = () => {
       const response = await api.post(`/api/project/log/${id}`, {
         note: values.note
       });
-      
+
       if (response.status === 200) {
         message.success('Not başarıyla eklendi');
         setNoteModalVisible(false);
@@ -423,80 +447,80 @@ const ProjectDetail = () => {
   // Poz tablosu kolonları
   const pozColumns = [
     {
-        title: 'Poz Kodu',
-        dataIndex: 'code',
-        key: 'code',
-        render: (text, record) => record.pozId?.code || '-'
+      title: 'Poz Kodu',
+      dataIndex: 'code',
+      key: 'code',
+      render: (text, record) => record.pozId?.code || '-'
     },
     {
-        title: 'Poz Adı',
-        dataIndex: 'name',
-        key: 'name',
-        render: (text, record) => record.pozId?.name || '-'
+      title: 'Poz Adı',
+      dataIndex: 'name',
+      key: 'name',
+      render: (text, record) => record.pozId?.name || '-'
     },
     {
-        title: 'Miktar',
-        dataIndex: 'quantity',
-        key: 'quantity',
-        render: (text, record) => (record.quantity || 0).toLocaleString('tr-TR')
+      title: 'Miktar',
+      dataIndex: 'quantity',
+      key: 'quantity',
+      render: (text, record) => (record.quantity || 0).toLocaleString('tr-TR')
     },
     {
-        title: 'Birim',
-        dataIndex: 'unit',
-        key: 'unit',
-        render: (text, record) => record.pozId?.unit || '-'
+      title: 'Birim',
+      dataIndex: 'unit',
+      key: 'unit',
+      render: (text, record) => record.pozId?.unit || '-'
     },
     {
-        title: 'Birim Fiyat',
-        dataIndex: 'price',
-        key: 'price',
-        render: (text, record) => {
-            const price = user.userType === 'Taşeron' ? record.contractorPrice : record.price;
-            return (price || 0).toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' });
-        }
+      title: 'Birim Fiyat',
+      dataIndex: 'price',
+      key: 'price',
+      render: (text, record) => {
+        const price = user.userType === 'Taşeron' ? record.contractorPrice : record.price;
+        return (price || 0).toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' });
+      }
     },
     {
-        title: 'Toplam',
-        dataIndex: 'totalPrice',
-        key: 'totalPrice',
-        render: (text, record) => {
-            const price = user.userType === 'Taşeron' ? record.contractorPrice : record.price;
-            const total = (price || 0) * (record.quantity || 0);
-            return total.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' });
-        }
+      title: 'Toplam',
+      dataIndex: 'totalPrice',
+      key: 'totalPrice',
+      render: (text, record) => {
+        const price = user.userType === 'Taşeron' ? record.contractorPrice : record.price;
+        const total = (price || 0) * (record.quantity || 0);
+        return total.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' });
+      }
     },
     ...(user.userType === 'Sistem Yetkilisi' ? [
-        {
-            title: 'Taşeron Fiyat',
-            dataIndex: 'contractorPrice',
-            key: 'contractorPrice',
-            render: (text, record) => (record.contractorPrice || 0).toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })
-        },
-        {
-            title: 'Taşeron Toplam',
-            dataIndex: 'contractorTotalPrice',
-            key: 'contractorTotalPrice',
-            render: (text, record) => {
-                const total = (record.contractorPrice || 0) * (record.quantity || 0);
-                return total.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' });
-            }
+      {
+        title: 'Taşeron Fiyat',
+        dataIndex: 'contractorPrice',
+        key: 'contractorPrice',
+        render: (text, record) => (record.contractorPrice || 0).toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })
+      },
+      {
+        title: 'Taşeron Toplam',
+        dataIndex: 'contractorTotalPrice',
+        key: 'contractorTotalPrice',
+        render: (text, record) => {
+          const total = (record.contractorPrice || 0) * (record.quantity || 0);
+          return total.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' });
         }
+      }
     ] : []),
     {
-        title: 'İşlemler',
-        key: 'actions',
-        render: (text, record) => (
-            <Space>
-                <Button 
-                    type="link" 
-                    danger 
-                    onClick={() => handleDeletePoz(record._id)}
-                    icon={<DeleteOutlined />}
-                >
-                    Sil
-                </Button>
-            </Space>
-        )
+      title: 'İşlemler',
+      key: 'actions',
+      render: (text, record) => (
+        <Space>
+          <Button
+            type="link"
+            danger
+            onClick={() => handleDeletePoz(record._id)}
+            icon={<DeleteOutlined />}
+          >
+            Sil
+          </Button>
+        </Space>
+      )
     }
   ];
 
@@ -516,7 +540,7 @@ const ProjectDetail = () => {
         const extension = url.split('.').pop().toLowerCase();
         let format = extension.toUpperCase();
         let color = 'default';
-        
+
         // Format tipine göre renk belirleme
         if (['jpg', 'jpeg', 'png', 'gif'].includes(extension)) {
           color = 'green';
@@ -531,7 +555,7 @@ const ProjectDetail = () => {
         } else if (extension === 'sor') {
           color = 'geekblue';
         }
-        
+
         return <Tag color={color}>{format}</Tag>;
       }
     },
@@ -557,15 +581,15 @@ const ProjectDetail = () => {
       key: 'actions',
       render: (_, record) => (
         <Space>
-          <Button 
-            type="primary" 
+          <Button
+            type="primary"
             icon={<FileOutlined />}
             onClick={() => window.open(cdnAdapter.getFileUrl(record.documentUrl), '_blank')}
           >
             Görüntüle
           </Button>
-          <Button 
-            type="primary" 
+          <Button
+            type="primary"
             danger
             icon={<DeleteOutlined />}
             onClick={() => Modal.confirm({
@@ -589,83 +613,83 @@ const ProjectDetail = () => {
     const { selectedPoz } = useSelector(state => state.project);
 
     useEffect(() => {
-        if (selectedPoz) {
-            form.setFieldsValue({
-                quantity: selectedPoz.quantity,
-                status: selectedPoz.status,
-                notes: selectedPoz.notes
-            });
-        }
+      if (selectedPoz) {
+        form.setFieldsValue({
+          quantity: selectedPoz.quantity,
+          status: selectedPoz.status,
+          notes: selectedPoz.notes
+        });
+      }
     }, [selectedPoz, form]);
 
     const handleSubmit = async (values) => {
-        try {
-            await api.put(`/api/project/poz/${selectedPoz._id}`, values);
-            message.success("Poz başarıyla güncellendi");
-            dispatch(fetchProjectDetail(projectId));
-            setIsEditPozModalVisible(false);
-        } catch (error) {
-            message.error("Poz güncellenirken bir hata oluştu");
-        }
+      try {
+        await api.put(`/api/project/poz/${selectedPoz._id}`, values);
+        message.success("Poz başarıyla güncellendi");
+        dispatch(fetchProjectDetail(projectId));
+        setIsEditPozModalVisible(false);
+      } catch (error) {
+        message.error("Poz güncellenirken bir hata oluştu");
+      }
     };
 
     return (
-        <Modal
-            title="Poz Düzenle"
-            open={isEditPozModalVisible}
-            onCancel={() => setIsEditPozModalVisible(false)}
-            footer={null}
+      <Modal
+        title="Poz Düzenle"
+        open={isEditPozModalVisible}
+        onCancel={() => setIsEditPozModalVisible(false)}
+        footer={null}
+      >
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={handleSubmit}
         >
-            <Form
-                form={form}
-                layout="vertical"
-                onFinish={handleSubmit}
-            >
-                <Form.Item
-                    name="quantity"
-                    label="Miktar"
-                    rules={[{ required: true, message: "Lütfen miktar giriniz" }]}
-                >
-                    <InputNumber 
-                        min={0} 
-                        style={{ width: '100%' }}
-                        formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                        parser={value => value.replace(/\$\s?|(,*)/g, '')}
-                    />
-                </Form.Item>
+          <Form.Item
+            name="quantity"
+            label="Miktar"
+            rules={[{ required: true, message: "Lütfen miktar giriniz" }]}
+          >
+            <InputNumber
+              min={0}
+              style={{ width: '100%' }}
+              formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+              parser={value => value.replace(/\$\s?|(,*)/g, '')}
+            />
+          </Form.Item>
 
-                <Form.Item
-                    name="status"
-                    label="Durum"
-                    rules={[{ required: true, message: "Lütfen durum seçiniz" }]}
-                >
-                    <Select>
-                        <Option value="Beklemede">Beklemede</Option>
-                        <Option value="İşlemde">İşlemde</Option>
-                        <Option value="Tamamlandı">Tamamlandı</Option>
-                        <Option value="İptal">İptal</Option>
-                    </Select>
-                </Form.Item>
+          <Form.Item
+            name="status"
+            label="Durum"
+            rules={[{ required: true, message: "Lütfen durum seçiniz" }]}
+          >
+            <Select>
+              <Option value="Beklemede">Beklemede</Option>
+              <Option value="İşlemde">İşlemde</Option>
+              <Option value="Tamamlandı">Tamamlandı</Option>
+              <Option value="İptal">İptal</Option>
+            </Select>
+          </Form.Item>
 
-                <Form.Item
-                    name="notes"
-                    label="Notlar"
-                >
-                    <Input.TextArea rows={4} />
-                </Form.Item>
+          <Form.Item
+            name="notes"
+            label="Notlar"
+          >
+            <Input.TextArea rows={4} />
+          </Form.Item>
 
-                <Form.Item>
-                    <Space>
-                        <Button type="primary" htmlType="submit">
-                            Kaydet
-                        </Button>
-                        <Button onClick={() => setIsEditPozModalVisible(false)}>
-                            İptal
-                        </Button>
-                    </Space>
-                </Form.Item>
-            </Form>
-        </Modal>
+          <Form.Item>
+            <Space>
+              <Button type="primary" htmlType="submit">
+                Kaydet
+              </Button>
+              <Button onClick={() => setIsEditPozModalVisible(false)}>
+                İptal
+              </Button>
+            </Space>
+          </Form.Item>
+        </Form>
+      </Modal>
     );
   };
 
@@ -686,9 +710,9 @@ const ProjectDetail = () => {
           <Text className="block mb-6">
             {error || "İstediğiniz proje bulunamadı veya erişim izniniz yok."}
           </Text>
-          <Button 
-            type="primary" 
-            icon={<ArrowLeftOutlined />} 
+          <Button
+            type="primary"
+            icon={<ArrowLeftOutlined />}
             onClick={() => navigate('/projects')}
           >
             Projelere Dön
@@ -713,23 +737,35 @@ const ProjectDetail = () => {
             <Title level={2} className="m-0">Proje Detayları</Title>
           </div>
           <Space>
-            <Button 
-              type="default" 
-              icon={<ArrowLeftOutlined />} 
+            <Button
+              type="default"
+              icon={<ArrowLeftOutlined />}
               onClick={() => navigate('/projects')}
             >
               Projelere Dön
             </Button>
             {canChangeStatus && (
-              <Button 
-                type="primary" 
-                onClick={() => {
-                  setSelectedStatus(project.status);
-                  setStatusModalVisible(true);
-                }}
-              >
-                Durum Değiştir
-              </Button>
+              <div>
+                <Button
+                  danger
+                  type="primary"
+                  onClick={() => {
+                    handleDeleteProject();
+                  }}
+                >
+                  Sil
+                </Button>
+                <Button
+                  type="primary"
+                  onClick={() => {
+                    setSelectedStatus(project.status);
+                    setStatusModalVisible(true);
+                  }}
+                >
+                  Durum Değiştir
+                </Button>
+              </div>
+
             )}
           </Space>
         </div>
@@ -753,8 +789,8 @@ const ProjectDetail = () => {
           {/* Proje detayları bölümü */}
           <Row gutter={[24, 24]}>
             <Col span={24} lg={12}>
-              <Card 
-                title={<div className="flex items-center"><ProjectOutlined className="mr-2" /> Proje Bilgileri</div>} 
+              <Card
+                title={<div className="flex items-center"><ProjectOutlined className="mr-2" /> Proje Bilgileri</div>}
                 className="h-full"
                 type="inner"
               >
@@ -785,8 +821,8 @@ const ProjectDetail = () => {
             </Col>
 
             <Col span={24} lg={12}>
-              <Card 
-                title={<div className="flex items-center"><EnvironmentOutlined className="mr-2" /> Konum ve Saha Bilgileri</div>} 
+              <Card
+                title={<div className="flex items-center"><EnvironmentOutlined className="mr-2" /> Konum ve Saha Bilgileri</div>}
                 className="h-full"
                 type="inner"
               >
@@ -812,8 +848,8 @@ const ProjectDetail = () => {
 
             {/* Denetçi (Supervisor) bilgileri */}
             <Col span={24} lg={12}>
-              <Card 
-                title={<div className="flex items-center"><UserOutlined className="mr-2" /> Denetçi (Supervisor)</div>} 
+              <Card
+                title={<div className="flex items-center"><UserOutlined className="mr-2" /> Denetçi (Supervisor)</div>}
                 className="h-full shadow-sm"
                 type="inner"
               >
@@ -823,8 +859,8 @@ const ProjectDetail = () => {
 
             {/* Yüklenici (Taşeron) bilgileri */}
             <Col span={24} lg={12}>
-              <Card 
-                title={<div className="flex items-center"><TeamOutlined className="mr-2" /> Yüklenici (Taşeron)</div>} 
+              <Card
+                title={<div className="flex items-center"><TeamOutlined className="mr-2" /> Yüklenici (Taşeron)</div>}
                 className="h-full shadow-sm"
                 type="inner"
               >
@@ -836,7 +872,7 @@ const ProjectDetail = () => {
 
         {/* Notlar bölümü */}
         {project.notes && (
-          <Card 
+          <Card
             title={<div className="flex items-center"><MessageOutlined className="mr-2" /> Proje Notları</div>}
             className="shadow-md rounded-lg mb-6"
           >
@@ -847,15 +883,15 @@ const ProjectDetail = () => {
         )}
 
         {/* Poz Bilgileri Bölümü */}
-        <Card 
+        <Card
           title={<div className="flex items-center"><DatabaseOutlined className="mr-2" /> Poz Bilgileri</div>}
           className="shadow-md rounded-lg mb-6"
         >
           <div className="mt-8">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-2xl font-bold">Pozlar</h2>
-              <Button 
-                type="primary" 
+              <Button
+                type="primary"
                 onClick={() => setIsAddPozModalOpen(true)}
                 icon={<PlusOutlined />}
               >
@@ -864,16 +900,16 @@ const ProjectDetail = () => {
             </div>
             {pozes && pozes.length > 0 ? (
               <div className="overflow-x-auto">
-                <Table 
-                  columns={pozColumns} 
-                  dataSource={pozes} 
+                <Table
+                  columns={pozColumns}
+                  dataSource={pozes}
                   rowKey="_id"
                   pagination={false}
                 />
               </div>
             ) : (
-              <Empty 
-                image={Empty.PRESENTED_IMAGE_SIMPLE} 
+              <Empty
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
                 description={
                   <div>
                     <p className="text-lg mb-2">Poz bilgisi bulunamadı</p>
@@ -886,13 +922,13 @@ const ProjectDetail = () => {
         </Card>
 
         {/* Belgeler Bölümü */}
-        <Card 
+        <Card
           title={
             <div className="flex justify-between items-center">
               <span>Proje Belgeleri</span>
-              <Button 
-                type="primary" 
-                icon={<PlusOutlined />} 
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
                 onClick={() => setIsAddDocumentModalOpen(true)}
               >
                 Belge Ekle
@@ -909,17 +945,17 @@ const ProjectDetail = () => {
           ) : documents.length === 0 ? (
             <Empty description="Henüz belge eklenmemiş" />
           ) : (
-            <Table 
-              columns={documentColumns} 
-              dataSource={documents} 
-              rowKey="_id" 
+            <Table
+              columns={documentColumns}
+              dataSource={documents}
+              rowKey="_id"
               pagination={{ pageSize: 5 }}
             />
           )}
         </Card>
 
         {/* Tarihçe Bölümü */}
-        <Card 
+        <Card
           title={<div className="flex items-center"><ClockCircleOutlined className="mr-2" /> Proje Tarihçesi</div>}
           className="shadow-md rounded-lg mb-6"
         >
@@ -932,7 +968,7 @@ const ProjectDetail = () => {
                   {formatDate(project.createdAt)}
                 </div>
               </Timeline.Item>
-              
+
               {/* Log kayıtları */}
               {logs.map((log, index) => (
                 <Timeline.Item key={index} color="blue">
@@ -943,7 +979,7 @@ const ProjectDetail = () => {
                   </div>
                 </Timeline.Item>
               ))}
-              
+
               {/* Son güncelleme kaydı (eğer farklıysa) */}
               {project.updatedAt && project.createdAt !== project.updatedAt && (
                 <Timeline.Item color="orange">
@@ -962,8 +998,8 @@ const ProjectDetail = () => {
 
         {/* Not Ekleme Butonu */}
         <div className="mb-4">
-          <Button 
-            type="primary" 
+          <Button
+            type="primary"
             onClick={() => setNoteModalVisible(true)}
             icon={<PlusOutlined />}
           >
@@ -988,16 +1024,16 @@ const ProjectDetail = () => {
               label="Not"
               rules={[{ required: true, message: 'Lütfen bir not girin' }]}
             >
-              <AntInput.TextArea 
-                rows={4} 
+              <AntInput.TextArea
+                rows={4}
                 placeholder="Notunuzu buraya yazın..."
               />
             </Form.Item>
             <Form.Item>
               <Space>
-                <Button 
-                  type="primary" 
-                  htmlType="submit" 
+                <Button
+                  type="primary"
+                  htmlType="submit"
                   loading={noteLoading}
                 >
                   Kaydet
@@ -1053,8 +1089,8 @@ const ProjectDetail = () => {
             setDocumentUrl('');
           }}
           footer={[
-            <Button 
-              key="cancel" 
+            <Button
+              key="cancel"
               onClick={() => {
                 setIsAddDocumentModalOpen(false);
                 setDocumentType('');
@@ -1063,9 +1099,9 @@ const ProjectDetail = () => {
             >
               İptal
             </Button>,
-            <Button 
-              key="submit" 
-              type="primary" 
+            <Button
+              key="submit"
+              type="primary"
               onClick={handleAddDocument}
               disabled={!documentType || !documentUrl}
             >
@@ -1092,11 +1128,11 @@ const ProjectDetail = () => {
               <Select.Option value="OTDR (SOR)">OTDR (SOR)</Select.Option>
             </Select>
           </div>
-          
+
           <div className="mb-4">
             <label className="block mb-2">Belge Yükle:</label>
-            <FileUpload 
-              onSuccess={handleFileUploadSuccess} 
+            <FileUpload
+              onSuccess={handleFileUploadSuccess}
               buttonText="Belge Yükle"
               maxFileSize={10}
             />

@@ -73,4 +73,30 @@ const GetUsers = async (req, res) => {
     }
 };
 
-module.exports = { CreateUser, LoginUser, GetUsers };
+const DeleteUser = async (req, res) => {
+    try {
+        const { id } = req.params;  // Parametre olarak id alıyoruz
+        const currentUser = req.user;  // Silme işlemi yapan kullanıcı
+
+        // Eğer kullanıcı "Sistem Yetkilisi" değilse işlem yapılmasın
+        if (currentUser.userType !== 'Sistem Yetkilisi') {
+            return res.status(403).json({ message: "Bu işlemi yapma yetkiniz yok." });
+        }
+
+        // Silinecek kullanıcıyı id ile bul
+        const userToDelete = await User.findById(id);
+        if (!userToDelete) {
+            return res.status(404).json({ message: "Kullanıcı bulunamadı." });
+        }
+
+        // Kullanıcıyı sil
+        await User.findByIdAndDelete(id);
+        res.status(200).json({ message: "Kullanıcı başarıyla silindi." });
+    } catch (error) {
+        console.error("Kullanıcı silinirken hata oluştu:", error);
+        res.status(500).json({ message: "Sunucu hatası." });
+    }
+};
+
+
+module.exports = { CreateUser, LoginUser, GetUsers, DeleteUser };
