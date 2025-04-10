@@ -35,7 +35,7 @@ const AddPozModal = ({ isOpen, onClose, onAdd, loading }) => {
 
         if (!pozList || pozList.length === 0) {
             return (
-                <Empty 
+                <Empty
                     description="Poz listesi bulunamadı"
                     className="py-4"
                 />
@@ -47,19 +47,19 @@ const AddPozModal = ({ isOpen, onClose, onAdd, loading }) => {
                 placeholder="Poz seçiniz"
                 onChange={handlePozChange}
                 showSearch
-                optionFilterProp="children"
+                optionFilterProp="label"
                 filterOption={(input, option) =>
-                    option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                    option?.label?.toLowerCase().includes(input.toLowerCase())
                 }
-            >
-                {pozList.map(poz => (
-                    <Select.Option key={poz._id} value={poz._id}>
-                        {poz.name} - {poz.unit} - {user.userType === 'Taşeron' ? 
-                            (poz.price || 0).toLocaleString('tr-TR') + ' ₺' : 
-                            (poz.originalPrice || 0).toLocaleString('tr-TR') + ' ₺'}
-                    </Select.Option>
-                ))}
-            </Select>
+                options={pozList.map(poz => {
+                    const price = user?.userType === 'Taşeron' ? poz.price : poz.originalPrice;
+                    return {
+                        value: poz._id,
+                        label: `${poz.name} - ${poz.unit} - ${(price || 0).toLocaleString('tr-TR')} ₺`,
+                    };
+                })}
+            />
+
         );
     };
 
@@ -90,8 +90,8 @@ const AddPozModal = ({ isOpen, onClose, onAdd, loading }) => {
                             label="Miktar"
                             rules={[{ required: true, message: "Lütfen miktar giriniz" }]}
                         >
-                            <InputNumber 
-                                min={0} 
+                            <InputNumber
+                                min={0}
                                 style={{ width: '100%' }}
                                 formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
                                 parser={value => value.replace(/\$\s?|(,*)/g, '')}
@@ -104,8 +104,8 @@ const AddPozModal = ({ isOpen, onClose, onAdd, loading }) => {
                                 label="Taşeron Fiyatı"
                                 rules={[{ required: true, message: "Lütfen taşeron fiyatını giriniz" }]}
                             >
-                                <InputNumber 
-                                    min={0} 
+                                <InputNumber
+                                    min={0}
                                     style={{ width: '100%' }}
                                     formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
                                     parser={value => value.replace(/\$\s?|(,*)/g, '')}
