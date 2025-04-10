@@ -88,7 +88,7 @@ const ImportContractorPrices = ({ isOpen, onClose, onSuccess }) => {
             const validData = formattedData.filter(item => 
                 item.code && 
                 !isNaN(item.price) && 
-                item.price > 0
+                item.price >= 0
             );
 
             if (validData.length === 0) {

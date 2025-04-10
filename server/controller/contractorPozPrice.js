@@ -149,7 +149,8 @@ const BulkAddContractorPozPrices = async (req, res) => {
                     return { error: `Poz bulunamadı: ${code}` };
                 }
 
-                if (!price || price <= 0) {
+                if (price < 0) {
+                    console.log(price)
                     return { error: `Geçersiz fiyat: ${price}` };
                 }
 
