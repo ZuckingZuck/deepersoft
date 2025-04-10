@@ -12,7 +12,7 @@ const ContractorPozPrice = require("../model/ContractorPozPrice");
 const CreateProject = async (req, res) => {
     try {
         const user = req.user;
-        
+
         // Taşeron kullanıcılar proje oluşturamaz
         if (user.userType === 'Taşeron') {
             return res.status(403).json({ message: "Proje oluşturma yetkiniz yok" });
@@ -35,22 +35,22 @@ const GetProjects = async (req, res) => {
         const user = req.user;
         const { projectStatus } = req.query;
         console.log("İstek geldi");
-        
+
         // Temel filtreyi oluştur
         let filter = {};
-        
+
         // Status filtresi varsa ekle
         if (projectStatus) {
             filter.status = projectStatus;
         }
-        
+
         // Taşeron kullanıcılar için sadece kendi projelerini göster
         if (user && user.userType === 'Taşeron') {
             filter.contractor = user._id;
         }
-        
+
         console.log("Filtre:", filter);
-        
+
         const projects = await ProjectDB.find(filter)
             .populate({
                 path: 'supervisor',
@@ -62,14 +62,14 @@ const GetProjects = async (req, res) => {
                 select: 'fullName email phone userType',
                 model: 'users'
             });
-        
+
         console.log("Bulunan projeler:", projects.length);
-        
+
         if (projects.length > 0) {
             console.log("İlk proje supervisor:", projects[0].supervisor ? "Var" : "Yok");
             console.log("İlk proje contractor:", projects[0].contractor ? "Var" : "Yok");
         }
-        
+
         res.status(200).json(projects);
     } catch (error) {
         console.log("Hata:", error);
@@ -81,7 +81,7 @@ const GetProjectDetail = async (req, res) => {
     try {
         const { id } = req.params;
         const user = req.user;
-        
+
         // Projeyi bul
         const project = await ProjectDB.findById(id)
             .populate('supervisor')
@@ -195,13 +195,15 @@ const AddProjectPoz = async (req, res) => {
             return res.status(404).json({ message: "Poz bulunamadı" });
         }
 
+        const project = await ProjectDB.findById(projectId);
+
         const constractorPozPrice = await ContractorPozPriceDB.findOne({
-            contractorId: user._id,
+            contractorId: project.contractor,
             pozId: poz._id
         });
 
         // Projenin var olup olmadığını kontrol et
-        const project = await ProjectDB.findById(projectId);
+
         if (!project) {
             return res.status(404).json({ message: "Proje bulunamadı" });
         }
@@ -225,27 +227,27 @@ const AddProjectPoz = async (req, res) => {
         await projectPoz.save();
 
         // Stok işlemleri
-        if (user.userType === 'Taşeron') {
-            // Mevcut stok kontrolü
-            let stock = await StockDB.findOne({
-                user: user._id,
-                poz: pozId
-            });
 
-            if (stock) {
-                // Stok varsa güncelle
-                stock.amount -= amount;
-                await stock.save();
-            } else {
-                // Stok yoksa yeni oluştur
-                stock = new StockDB({
-                    user: user._id,
-                    poz: pozId,
-                    amount: -amount // Negatif değer olarak kaydet
-                });
-                await stock.save();
-            }
+        // Mevcut stok kontrolü
+        let stock = await StockDB.findOne({
+            user: project.contractor,
+            poz: pozId
+        });
+
+        if (stock) {
+            // Stok varsa güncelle
+            stock.amount -= amount;
+            await stock.save();
+        } else {
+            // Stok yoksa yeni oluştur
+            stock = new StockDB({
+                user: user._id,
+                poz: pozId,
+                amount: -amount // Negatif değer olarak kaydet
+            });
+            await stock.save();
         }
+
 
         res.status(201).json(projectPoz);
     } catch (error) {
@@ -353,17 +355,17 @@ const AddProjectDocument = async (req, res) => {
 const GetProjectDocuments = async (req, res) => {
     try {
         const { projectId } = req.params;
-        
+
         // Proje var mı kontrol et
         const existingProject = await ProjectDB.findById(projectId);
         if (!existingProject) {
             return res.status(404).json({ message: "Proje bulunamadı." });
         }
-        
+
         const documents = await ProjectDocumentDB.find({ project: projectId })
             .populate("user", "fullName email")
             .sort({ createdAt: -1 });
-        
+
         res.status(200).json(documents);
     } catch (error) {
         console.error(error);
@@ -393,15 +395,15 @@ const DeleteProjectDocument = async (req, res) => {
             const fileNameWithParams = documentUrl.split('/').pop();
             // URL'de query parametreleri varsa onları temizle (? işaretinden sonraki kısmı at)
             const fileName = fileNameWithParams.split('?')[0];
-            
+
             console.log("Silinecek dosya adı:", fileName);
-            
+
             // CDN sunucusundan dosyayı sil
             const cdnUrl = process.env.CDN_URL || 'http://localhost:5000';
             const deleteResponse = await fetch(`${cdnUrl}/api/files/${fileName}`, {
                 method: 'DELETE'
             });
-            
+
             if (!deleteResponse.ok) {
                 const errorData = await deleteResponse.json();
                 console.error(`CDN'den dosya silinirken hata: ${JSON.stringify(errorData)}`);
@@ -412,18 +414,18 @@ const DeleteProjectDocument = async (req, res) => {
             console.error('CDN dosya silme hatası:', cdnError);
             // CDN hatası olsa bile veritabanından silme işlemine devam et
         }
-        
+
         // Veritabanından belge kaydını sil
         await ProjectDocumentDB.findByIdAndDelete(req.params.id);
-        
+
         // Proje logu ekle
         const documentLogNote = `"${document.documentType}" belge tipindeki doküman silindi.`;
-        await new ProjectLogDB({ 
-            user: user._id, 
-            project: document.project._id, 
-            note: documentLogNote 
+        await new ProjectLogDB({
+            user: user._id,
+            project: document.project._id,
+            note: documentLogNote
         }).save();
-        
+
         res.status(200).json({ message: "Proje belgesi başarıyla silindi." });
     } catch (error) {
         console.error(error);
@@ -505,15 +507,15 @@ const GetAllProjects = async (req, res) => {
 const SearchProject = async (req, res) => {
     try {
         const user = req.user;
-        const { 
-            name, 
-            status, 
-            fieldType, 
-            city, 
-            clusterName, 
-            fieldName, 
-            ddo, 
-            tellcordiaNo, 
+        const {
+            name,
+            status,
+            fieldType,
+            city,
+            clusterName,
+            fieldName,
+            ddo,
+            tellcordiaNo,
             homePass,
             contractor,
             supervisor,
@@ -595,7 +597,7 @@ const UpdateProjectPoz = async (req, res) => {
     }
 };
 
-module.exports = { 
+module.exports = {
     CreateProject, GetProjects, GetProjectDetail, DeleteProject,
     AddProjectLog, DeleteProjectLog, AddProjectPoz, ChangeProjectStatus, DeleteProjectPoz,
     AddProjectDocument, GetProjectDocuments, DeleteProjectDocument, GetProject, GetAllProjects,
