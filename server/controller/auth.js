@@ -77,7 +77,10 @@ const DeleteUser = async (req, res) => {
     try {
         const { id } = req.params;  // Parametre olarak id alıyoruz
         const currentUser = req.user;  // Silme işlemi yapan kullanıcı
-
+        console.log(id, currentUser._id, "kbilgileri");
+        if(currentUser._id.toString() === id){
+            return res.status(409).json({ message: "Kendi hesabını silemezsin." });
+        }
         // Eğer kullanıcı "Sistem Yetkilisi" değilse işlem yapılmasın
         if (currentUser.userType !== 'Sistem Yetkilisi') {
             return res.status(403).json({ message: "Bu işlemi yapma yetkiniz yok." });
