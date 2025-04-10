@@ -241,7 +241,7 @@ const AddProjectPoz = async (req, res) => {
         } else {
             // Stok yoksa yeni oluştur
             stock = new StockDB({
-                user: user._id,
+                user: project.contractor,
                 poz: pozId,
                 amount: -amount // Negatif değer olarak kaydet
             });
@@ -276,16 +276,17 @@ const DeleteProjectPoz = async (req, res) => {
         }
 
         // Eğer malzeme ise ve miktar varsa, stok işlemi yap
-        if (projectPoz.pozId.priceType.includes("M") && projectPoz.amount) {
+        if (projectPoz.pozId.priceType.includes("M") && projectPoz.quantity) {
+            console.log(projectPoz, "bu porject poz *********")
             // Kullanıcının stoğunu bul
             const userStock = await StockDB.findOne({
-                user: projectPoz.user,
-                poz: projectPoz.poz._id
+                user: currentProject.contractor,
+                poz: projectPoz.pozId._id
             });
 
             if (userStock) {
                 // Stok varsa miktarı geri ekle
-                userStock.amount += projectPoz.amount;
+                userStock.amount += projectPoz.quantity;
                 await userStock.save();
                 console.log("Stok güncellendi:", userStock);
             } else {
@@ -293,7 +294,7 @@ const DeleteProjectPoz = async (req, res) => {
                 await StockDB.create({
                     user: currentProject.contractor,
                     poz: projectPoz.poz._id,
-                    amount: projectPoz.amount
+                    amount: projectPoz.quantity
                 });
                 console.log("Yeni stok oluşturuldu");
             }

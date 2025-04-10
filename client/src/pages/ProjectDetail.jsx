@@ -320,11 +320,11 @@ const ProjectDetail = () => {
   const handleDeleteProject = async () => {
     // Kullanıcıya onay sorusu gösteriliyor
     const isConfirmed = window.confirm("Proje silinecek. Emin misiniz?");
-    
+
     if (isConfirmed) {
       try {
         const response = await api.delete(`/api/project/${id}`);
-        if(response.status === 200){
+        if (response.status === 200) {
           message.success("Proje silindi.");
           setTimeout(() => {
             navigate("/"); // Anasayfaya yönlendiriyor
@@ -338,7 +338,7 @@ const ProjectDetail = () => {
       message.info("Silme işlemi iptal edildi.");
     }
   };
-  
+
 
   // Silme fonksiyonu
   const handleDeletePoz = async (pozId) => {
@@ -516,6 +516,8 @@ const ProjectDetail = () => {
             danger
             onClick={() => handleDeletePoz(record._id)}
             icon={<DeleteOutlined />}
+            disabled={isDeleting}
+            loading={isDeleting}
           >
             Sil
           </Button>
