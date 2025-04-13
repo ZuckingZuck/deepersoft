@@ -844,6 +844,16 @@ const ProjectDetail = () => {
                   <Descriptions.Item label={<span><CodeOutlined className="mr-1" /> SIR</span>}>
                     {project.sir || "-"}
                   </Descriptions.Item>
+                  <Descriptions.Item label={<span><CodeOutlined className="mr-1" /> Toplam Kazanç</span>}>
+                    {user.userType === "Sistem Yetkilisi" ? project.totalPrice.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' }) : project.totalContractorPrice.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' }) || "-"}
+                  </Descriptions.Item>
+                  {
+                    user.userType === "Sistem Yetkilisi" && (
+                      <Descriptions.Item label={<span><CodeOutlined className="mr-1" />Taşeron Kazanç</span>}>
+                       {project.totalContractorPrice.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })} 
+                      </Descriptions.Item>
+                    )
+                  }
                 </Descriptions>
               </Card>
             </Col>

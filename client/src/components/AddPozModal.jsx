@@ -55,7 +55,7 @@ const AddPozModal = ({ isOpen, onClose, onAdd, loading }) => {
                     const price = user?.userType === 'Taşeron' ? poz.price : poz.originalPrice;
                     return {
                         value: poz._id,
-                        label: `${poz.name} - ${poz.unit} - ${(price || 0).toLocaleString('tr-TR')} ₺`,
+                        label: `${poz.code} - ${poz.name} - ${(price || 0).toLocaleString('tr-TR')} ₺`,
                     };
                 })}
             />
