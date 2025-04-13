@@ -45,16 +45,6 @@ const Login = () => {
         
         message.success("Giriş başarılı! Yönlendiriliyorsunuz...");
         
-        try {
-          await Promise.all([
-            dispatch(fetchAllUsers()).unwrap(),
-            dispatch(fetchAllClusters()).unwrap()
-          ]);
-        } catch (err) {
-          console.warn('Veri yüklenirken hata oluştu:', err);
-          message.warning('Bazı API verileri yüklenemedi. Proje oluşturma ekranı için API bağlantısının aktif olduğundan emin olun.');
-        }
-        
         navigate("/", { replace: true });
       }
     } catch (error) {

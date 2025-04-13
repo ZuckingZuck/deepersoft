@@ -259,6 +259,23 @@ const Projects = () => {
       ),
     },
     {
+      title: "Kazanç Bilgileri",
+      key: "priceInfo",
+      width: 200,
+      render: (_, record) => (
+        <div>
+          <div className="text-xs text-gray-500 mt-1">
+            <div className="flex items-center mb-1">
+              <span className="font-semibold mr-2">Kazanç:</span> {record.totalPrice.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
+            </div>
+            <div className="flex items-center">
+              <span className="font-semibold mr-2">Taşeron Kazanç:</span> {record.totalContractorPrice.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
+            </div>
+          </div>
+        </div>
+      ),
+    },
+    {
       title: "İşlemler",
       key: "actions",
       width: 100,
