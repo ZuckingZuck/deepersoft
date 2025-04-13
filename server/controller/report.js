@@ -203,22 +203,10 @@ const GetProjectPozReport = async (req, res) => {
         console.log("Uygulanan proje filtreleri:", projectFilter);
         
         // Paralel olarak tüm verileri getir
-        const [projects, contractorPozPrices] = await Promise.all([
+        const [projects] = await Promise.all([
             // Filtrelenen projelerin ID'lerini al
             ProjectDB.find(projectFilter).select('_id'),
             // Taşeron poz fiyatlarını getir
-            ContractorPozPriceDB.find()
-                .populate({
-                    path: 'contractorId',
-                    model: 'users',
-                    select: 'fullName'
-                })
-                .populate({
-                    path: 'pozId',
-                    model: 'pozes',
-                    select: 'code name'
-                })
-                .lean()
         ]);
 
         const projectIds = projects.map(project => project._id);
@@ -246,16 +234,11 @@ const GetProjectPozReport = async (req, res) => {
             
         console.log(`${projectPozes.length} adet poz bulundu.`);
 
-        // Taşeron poz fiyatlarını map'e dönüştür
-        const contractorPriceMap = new Map();
-        contractorPozPrices.forEach(cpp => {
-            const key = `${cpp.contractorId._id}-${cpp.pozId._id}`;
-            contractorPriceMap.set(key, cpp.price);
-        });
+       
         
         // Excel dosyası oluştur
         if (req.query.format === 'excel') {
-            return await generatePozExcel(projectPozes, contractorPriceMap, res);
+            return await generatePozExcel(projectPozes, res);
         }
         
         // Normal JSON yanıtı
@@ -278,7 +261,7 @@ const GetProjectPozReport = async (req, res) => {
  * @param {Object} res - HTTP yanıt nesnesi
  * @param {Array} projectPozes - Poz verileri
  */
-const generatePozExcel = async (projectPozes, contractorPriceMap, res) => {
+const generatePozExcel = async (projectPozes, res) => {
     // Excel çalışma kitabı oluştur
     const workbook = new exceljs.Workbook();
     const worksheet = workbook.addWorksheet('Poz Raporu');
@@ -316,10 +299,11 @@ const generatePozExcel = async (projectPozes, contractorPriceMap, res) => {
     
     // Verileri ekle
     const rows = projectPozes.map(poz => {
+        console.log(poz);
         const amount = poz.quantity || 0;
         const price = poz.price || 0;
         const contractorKey = `${poz.projectId.contractor._id}-${poz.pozId._id}`;
-        const contractorPrice = contractorPriceMap.get(contractorKey) || 0;
+        const contractorPrice = poz.contractorPrice || 0;
         const totalPrice = amount * price;
         const contractorTotal = amount * contractorPrice;
 
