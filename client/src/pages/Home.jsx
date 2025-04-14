@@ -224,7 +224,7 @@ const Home = () => {
                           project.status === "İşlemde" ? "#3b82f6" :
                           project.status === "Onayda" ? "#f59e0b" :
                           "#6b7280",
-                        padding: "4px 12px",
+                        padding: "1px 12px",
                         borderRadius: "8px"
                       }}
                     />
