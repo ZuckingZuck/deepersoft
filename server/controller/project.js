@@ -264,7 +264,7 @@ const DeleteProjectPoz = async (req, res) => {
 
         const currentProject = await ProjectDB.findById(projectPoz.projectId)
         currentProject.totalPrice -= projectPoz.price * projectPoz.quantity;
-        currentProject.contractorTotalPrice -= projectPoz.contractorPrice * projectPoz.quantity;
+        currentProject.totalContractorPrice -= projectPoz.contractorPrice * projectPoz.quantity;
         console.log("projectpoz", projectPoz);
         if (!projectPoz) {
             return res.status(404).json({ message: "Poz bulunamadı" });

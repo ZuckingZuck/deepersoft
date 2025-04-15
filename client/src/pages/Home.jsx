@@ -237,15 +237,15 @@ const Home = () => {
                   <div id='wrapper' className='flex gap-3'>
                     <div className="flex items-center text-gray-500 text-sm mt-2">
                       <CalendarOutlined className="mr-1" />
-                      <Text type="secondary">Son güncelleme: {formatDate(project.updatedAt)}</Text>
+                      <Text type="secondary">Son güncelleme: {formatDate(project?.updatedAt)}</Text>
                     </div>
                     <div className="flex items-center text-gray-500 text-sm mt-2">
                       <AuditOutlined className="mr-1" />
-                      <Text type="secondary">Taşeron: {project.contractor.fullName}</Text>
+                      <Text type="secondary">Taşeron: {project?.contractor?.fullName}</Text>
                     </div>
                     <div className="flex items-center text-gray-500 text-sm mt-2">
                       <PicRightOutlined className="mr-1" />
-                      <Text type="secondary">Saha: {project.fieldName}</Text>
+                      <Text type="secondary">Saha: {project?.fieldName}</Text>
                     </div>
                   </div>
                   <div id='wrapper2' className='flex gap-3'>
