@@ -110,7 +110,6 @@ const ImportContractorPrices = ({ isOpen, onClose, onSuccess }) => {
             }
 
             message.success('Fiyatlar başarıyla içe aktarıldı');
-            setIsOpen(false);
             form.resetFields();
             onSuccess?.();
         } catch (error) {
