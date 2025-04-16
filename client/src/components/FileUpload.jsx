@@ -14,7 +14,7 @@ import cdnAdapter from '../utils/cdnAdapter';
 const { Dragger } = Upload;
 const { Title, Text } = Typography;
 
-const FileUpload = ({ projectId, onSuccess, onError, maxFileSize = 10, buttonText = "Dosya Ekle" }) => {
+const FileUpload = ({ projectId, onSuccess, onError, maxFileSize = 100, buttonText = "Dosya Ekle" }) => {
   const [fileList, setFileList] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);

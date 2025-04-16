@@ -19,6 +19,7 @@ import StockMovements from '../pages/StockMovements';
 import StockTransfer from '../pages/StockTransfer';
 import PozList from '../pages/PozList';
 import Reports from '../pages/Reports';
+import FieldTypeList from "../pages/FieldTypeList";
 import SearchResults from "../pages/SearchResults";
 
 const AppRouter = () => {
@@ -40,6 +41,7 @@ const AppRouter = () => {
         <Route path="/profile" element={<UserProfile />} />
         <Route path="/profile/:id" element={<UserDetail />} />
         <Route path="/ayarlar/kullanıcılar" element={<UserList />} />
+        <Route path="/tanimlamalar/saha-tipleri" element={<FieldTypeList />} />
         <Route path="/stok/durum" element={<StockStatus />} />
         <Route path="/stok/hareketler" element={<StockMovements />} />
         <Route path="/stok/transfer" element={<StockTransfer />} />

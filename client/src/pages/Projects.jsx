@@ -2,17 +2,17 @@ import React, { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { fetchProjects } from "../redux/projectSlice";
-import { 
-  Table, 
-  Tooltip, 
-  Button, 
-  message, 
-  Tag, 
-  Card, 
-  Space, 
-  Tabs, 
-  Badge, 
-  Avatar, 
+import {
+  Table,
+  Tooltip,
+  Button,
+  message,
+  Tag,
+  Card,
+  Space,
+  Tabs,
+  Badge,
+  Avatar,
   Typography,
   Spin,
   Modal,
@@ -26,10 +26,10 @@ import {
   Divider,
   Popover
 } from "antd";
-import { 
-  CheckCircleOutlined, 
-  CloseCircleOutlined, 
-  PlusOutlined, 
+import {
+  CheckCircleOutlined,
+  CloseCircleOutlined,
+  PlusOutlined,
   EyeOutlined,
   UserOutlined,
   TeamOutlined,
@@ -39,10 +39,12 @@ import {
   SearchOutlined,
   FilterOutlined,
   ClearOutlined,
+  UploadOutlined,
   InfoCircleOutlined
 } from "@ant-design/icons";
 import api from "../utils/api";
 import moment from "moment";
+import ImportProjectModal from "../components/ImportProjectModal";
 
 const { Title, Text } = Typography;
 const { TabPane } = Tabs;
@@ -107,6 +109,7 @@ const Projects = () => {
   const [searchForm] = Form.useForm();
   const [searchVisible, setSearchVisible] = useState(false);
   const [tableData, setTableData] = useState([]);
+  const [isImportProjectModalOpen, setIsImportProjectModalOpen] = useState(false);
 
   // Yetki kontrolü
   const canCreateProject = user && (user.userType === 'Sistem Yetkilisi' || user.userType === 'Supervisor');
@@ -175,6 +178,10 @@ const Projects = () => {
     );
   };
 
+  const handleImportSuccess = () => {
+    message.success('Projeler başarıyla içeri aktarıldı');
+  };
+
   const columns = [
     {
       title: "Proje Bilgileri",
@@ -208,7 +215,7 @@ const Projects = () => {
       render: (_, record) => (
         <div>
           <div className="flex items-center mb-1">
-            <EnvironmentOutlined className="mr-1 text-blue-500" /> 
+            <EnvironmentOutlined className="mr-1 text-blue-500" />
             <span>{record.city}</span>
           </div>
           <div className="text-xs text-gray-500">
@@ -280,9 +287,9 @@ const Projects = () => {
       key: "actions",
       width: 100,
       render: (_, record) => (
-        <Button 
-          type="primary" 
-          icon={<EyeOutlined />} 
+        <Button
+          type="primary"
+          icon={<EyeOutlined />}
           onClick={() => navigate(`/projects/${record._id}`)}
           size="middle"
           className="bg-blue-500 hover:bg-blue-600"
@@ -297,12 +304,12 @@ const Projects = () => {
   const statusTabs = Object.entries(statusMapping).map(([key, value]) => {
     const config = statusConfig[value] || {};
     return (
-      <TabPane 
+      <TabPane
         tab={
           <span>
             {config.icon} {value}
           </span>
-        } 
+        }
         key={key}
       />
     );
@@ -319,7 +326,7 @@ const Projects = () => {
             <Title level={2} className="m-0 text-gray-800">Projeler</Title>
           </div>
           <Space>
-            <Button 
+            <Button
               icon={<SearchOutlined />}
               className="rounded-lg hover:bg-blue-50"
               onClick={() => navigate('/projects/search')}
@@ -327,21 +334,31 @@ const Projects = () => {
               Detaylı Arama
             </Button>
             {canCreateProject && (
-              <Button 
-                type="primary" 
-                icon={<PlusOutlined />} 
-                onClick={() => navigate('/projects/new')}
-                size="large"
-                className="bg-blue-500 hover:bg-blue-600 shadow-md rounded-lg"
-              >
-                Yeni Proje Ekle
-              </Button>
+              <div className="flex gap-3">
+                <Button
+                  type="primary"
+                  icon={<UploadOutlined />}
+                  onClick={() => setIsImportProjectModalOpen(true)}
+                  className="bg-blue-500 hover:bg-blue-600"
+                >
+                  Projeleri İçeri Aktar
+                </Button>
+                <Button
+                  type="primary"
+                  icon={<PlusOutlined />}
+                  onClick={() => navigate('/projects/new')}
+                  className="bg-blue-500 hover:bg-blue-600 shadow-md rounded-lg"
+                >
+                  Yeni Proje Ekle
+                </Button>
+              </div>
+
             )}
           </Space>
         </div>
 
-        <Tabs 
-          activeKey={statusParam} 
+        <Tabs
+          activeKey={statusParam}
           onChange={handleTabChange}
           type="card"
           className="mb-4 rounded-lg overflow-hidden"
@@ -363,12 +380,11 @@ const Projects = () => {
         ) : (
           <Table
             columns={columns}
-            dataSource={tableData}
+            dataSource={tableData.reverse()}
             rowKey="_id"
             bordered={false}
             loading={loading}
-            pagination={{ 
-              pageSize: 10, 
+            pagination={{
               position: ["bottomCenter"],
               showSizeChanger: true,
               pageSizeOptions: ['5', '10', '20', '50'],
@@ -490,16 +506,16 @@ const Projects = () => {
           <Row>
             <Col span={24} style={{ textAlign: 'right' }}>
               <Space>
-                <Button 
-                  icon={<ClearOutlined />} 
+                <Button
+                  icon={<ClearOutlined />}
                   onClick={handleReset}
                   className="rounded-lg"
                 >
                   Temizle
                 </Button>
-                <Button 
-                  type="primary" 
-                  icon={<SearchOutlined />} 
+                <Button
+                  type="primary"
+                  icon={<SearchOutlined />}
                   htmlType="submit"
                   className="bg-blue-500 hover:bg-blue-600 rounded-lg shadow-md"
                 >
@@ -510,6 +526,11 @@ const Projects = () => {
           </Row>
         </Form>
       </Modal>
+      <ImportProjectModal
+        isOpen={isImportProjectModalOpen}
+        onClose={() => setIsImportProjectModalOpen(false)}
+        onSuccess={handleImportSuccess}
+      />
     </div>
   );
 };

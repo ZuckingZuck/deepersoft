@@ -101,7 +101,7 @@ export default function Navbar() {
       icon: <AppstoreOutlined />,
       dropdown: [
         { key: "cards", label: "Poz Kartları", link: "/tanimlamalar/poz-kartlari" },
-        { key: "types", label: "Poz Tipleri", link: "/tanimlamalar/poz-tipleri" },
+        { key: "types", label: "Saha Tipleri", link: "/tanimlamalar/saha-tipleri" },
         { key: "units", label: "Poz Birimleri", link: "/tanimlamalar/poz-birimleri" },
         { key: "groups", label: "Öbekler", link: "/tanimlamalar/obekler" },
       ],

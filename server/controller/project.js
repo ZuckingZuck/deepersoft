@@ -5,8 +5,11 @@ const ProjectDocumentDB = require("../model/ProjectDocument");
 const StockDB = require("../model/Stock");
 const PozDB = require("../model/Poz");
 const ContractorPozPriceDB = require("../model/ContractorPozPrice");
+const FieldTypeDB = require("../model/FieldType");
+const UserDB = require("../model/User");
 const fetch = require('node-fetch');
 const ContractorPozPrice = require("../model/ContractorPozPrice");
+
 
 //Project
 const CreateProject = async (req, res) => {
@@ -29,6 +32,68 @@ const CreateProject = async (req, res) => {
         res.status(500).json({ message: "Sunucu hatası." });
     }
 };
+
+const CreateProjectFromExcel = async (req, res) => {
+    try {
+        const projects = req.body.projects;
+
+        if (!Array.isArray(projects)) {
+            return res.status(400).json({ message: "Invalid data format" });
+        }
+
+        const operations = projects.map(async (pj) => {
+            // contractor ve supervisor sorgularını aynı anda başlat
+            console.log(pj);
+            const [contractorUser, supervisorUser, fieldType] = await Promise.all([
+                UserDB.findOne({ userName: pj.contractor }),
+                UserDB.findOne({ userType: "Supervisor" }),
+                FieldTypeDB.findOne({ code: pj.fieldType.toString() })
+            ]);
+
+            if (!contractorUser) {
+                throw { status: 404, message: `Contractor not found: ${pj.contractor}` };
+            }
+
+            if (!supervisorUser) {
+                throw { status: 404, message: `Supervisor not found: İstanbulsupervizör` };
+            }
+
+            if (!fieldType) {
+                throw { status: 404, message: `fieldType not found` };
+            }
+
+            const newProject = new ProjectDB({
+                name: "ASYA TCELL",
+                fieldType: fieldType.name,
+                clusterName: "ISTAD-UMRANIYE_GPON_2023-1",
+                fieldName: pj.fieldName,
+                ddo: pj.ddo,
+                tellcordiaNo: pj.tellcordiaNo,
+                loc: pj.loc,
+                sir: pj.sir,
+                homePass: pj.homePass,
+                date: Date.now(),
+                contractor: contractorUser._id,
+                supervisor: supervisorUser._id
+            });
+
+            return await newProject.save();
+        });
+
+        const updatedProjects = await Promise.all(operations);
+        res.status(200).json(updatedProjects);
+
+    } catch (error) {
+        console.error(error);
+
+        if (error.status === 404) {
+            return res.status(404).json({ message: error.message });
+        }
+
+        res.status(500).json({ message: "Internal server error", error });
+    }
+};
+
 
 const GetProjects = async (req, res) => {
     try {
@@ -602,5 +667,5 @@ module.exports = {
     CreateProject, GetProjects, GetProjectDetail, DeleteProject,
     AddProjectLog, DeleteProjectLog, AddProjectPoz, ChangeProjectStatus, DeleteProjectPoz,
     AddProjectDocument, GetProjectDocuments, DeleteProjectDocument, GetProject, GetAllProjects,
-    SearchProject, UpdateProjectPoz
+    SearchProject, UpdateProjectPoz, CreateProjectFromExcel
 };
