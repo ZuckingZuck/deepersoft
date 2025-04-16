@@ -113,9 +113,9 @@ const ProjectDetail = () => {
   }, [dispatch]);
 
   // Proje detaylarını çeken fonksiyon
-  const fetchProjectDetails = async () => {
+  const fetchProjectDetails = async (refresh) => {
     try {
-      setLoading(true);
+      if(refresh == true) setLoading(true);
       setLoadingDocuments(true); // Belge yükleme durumunu da ayarla
       setError(null);
 
@@ -153,7 +153,7 @@ const ProjectDetail = () => {
 
   useEffect(() => {
     if (id) {
-      fetchProjectDetails();
+      fetchProjectDetails(true);
     }
   }, [id]);
 
@@ -306,13 +306,14 @@ const ProjectDetail = () => {
 
       if (response.data) {
         message.success('Poz başarıyla eklendi');
-        setIsAddPozModalOpen(false);
-        fetchProjectDetails(); // Proje detaylarını yeniden yükle
+        //setIsAddPozModalOpen(false); //şimdilik false
+        fetchProjectDetails(false); // Proje detaylarını yeniden yükle
       }
     } catch (error) {
       console.error('Poz eklenirken hata:', error);
       message.error('Poz eklenirken bir hata oluştu');
-    } finally {
+      
+    }finally {
       setIsAddingPoz(false);
     }
   };
