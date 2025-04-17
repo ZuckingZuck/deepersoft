@@ -1,6 +1,7 @@
 const ProjectDB = require('../model/Project');
 const ProjectPozDB = require('../model/ProjectPoz');
 const ContractorPozPriceDB = require('../model/ContractorPozPrice');
+const ProjectLogDB = require("../model/ProjectLog");
 const UserDB = require('../model/User');
 const exceljs = require('exceljs');
 
@@ -11,14 +12,10 @@ const exceljs = require('exceljs');
  */
 const GetProjectReport = async (req, res) => {
     try {
-        // Gelen filtreleri al
         const { name, city, fieldType, contractor, status, supervisor, clusterName, fieldName, ddo, tellcordiaNo } = req.query;
-        
-        // Filtre nesnesini oluştur
+
         const filter = {};
-        
-        // Filtreleri ekle (eğer boş değilse)
-        if (name) filter.name = { $regex: name, $options: 'i' }; // Case-insensitive arama
+        if (name) filter.name = { $regex: name, $options: 'i' };
         if (city) filter.city = city;
         if (fieldType) filter.fieldType = fieldType;
         if (contractor) filter.contractor = contractor;
@@ -28,31 +25,46 @@ const GetProjectReport = async (req, res) => {
         if (fieldName) filter.fieldName = { $regex: fieldName, $options: 'i' };
         if (ddo) filter.ddo = { $regex: ddo, $options: 'i' };
         if (tellcordiaNo) filter.tellcordiaNo = { $regex: tellcordiaNo, $options: 'i' };
-        
-        console.log("Uygulanan filtreler:", filter);
-        
-        // Projeleri filtrelerle getir ve populate işlemi yap
+
         const projects = await ProjectDB.find(filter)
             .populate('contractor', 'fullName')
             .populate('supervisor', 'fullName')
-            .lean(); // JSON'a dönüştürmek için daha verimli
-        
-        // Excel dosyası oluştur
+            .lean();
+
+        const projectIds = projects.map(p => p._id.toString());
+
+        const logs = await ProjectLogDB.find({
+            project: { $in: projectIds },
+            note: { $ne: 'Proje oluşturuldu.' }
+        }).sort({ createdAt: 1 }).lean();
+
+        const logsByProject = {};
+        logs.forEach(log => {
+            const pid = log.project.toString();
+            if (!logsByProject[pid]) logsByProject[pid] = [];
+            logsByProject[pid].push(log.note);
+        });
+
+        projects.forEach(project => {
+            const pid = project._id.toString();
+            project.notes = logsByProject[pid] || [];
+        });
+
         if (req.query.format === 'excel') {
             return await generateExcel(projects, res);
         }
-        
-        // Normal JSON yanıtı
+
         res.status(200).json({
             success: true,
             count: projects.length,
             data: projects
         });
+
     } catch (error) {
         console.error("Rapor oluşturma hatası:", error);
-        res.status(500).json({ 
-            success: false, 
-            message: error.message || 'Rapor oluşturulurken bir hata oluştu.' 
+        res.status(500).json({
+            success: false,
+            message: error.message || 'Rapor oluşturulurken bir hata oluştu.'
         });
     }
 };
@@ -63,12 +75,12 @@ const GetProjectReport = async (req, res) => {
  * @param {Array} projects - Proje verileri
  */
 const generateExcel = async (projects, res) => {
-    // Excel çalışma kitabı oluştur
     const workbook = new exceljs.Workbook();
     const worksheet = workbook.addWorksheet('Projeler');
-    
-    // Başlık satırı
-    worksheet.columns = [
+
+    const maxNoteCount = Math.max(...projects.map(p => p.notes?.length || 0));
+
+    const columns = [
         { header: 'Proje Adı', key: 'name', width: 30 },
         { header: 'Şehir', key: 'city', width: 15 },
         { header: 'Alan Tipi', key: 'fieldType', width: 20 },
@@ -97,13 +109,20 @@ const generateExcel = async (projects, res) => {
         { header: 'Oluşturulma Tarihi', key: 'createdAt', width: 20 },
         { header: 'Son Güncelleme', key: 'updatedAt', width: 20 }
     ];
-    
-    // Başlık satırını kalın yap
+
+    for (let i = 0; i < maxNoteCount; i++) {
+        columns.push({
+            header: `Not ${i + 1}`,
+            key: `note${i + 1}`,
+            width: 40
+        });
+    }
+
+    worksheet.columns = columns;
     worksheet.getRow(1).font = { bold: true };
-    
-    // Verileri ekle
+
     projects.forEach(project => {
-        worksheet.addRow({
+        const row = {
             name: project.name,
             city: project.city,
             fieldType: project.fieldType,
@@ -131,12 +150,17 @@ const generateExcel = async (projects, res) => {
             totalContractorPrice: project.totalContractorPrice,
             createdAt: project.createdAt ? new Date(project.createdAt).toLocaleDateString('tr-TR') : '-',
             updatedAt: project.updatedAt ? new Date(project.updatedAt).toLocaleDateString('tr-TR') : '-'
+        };
+
+        (project.notes || []).forEach((note, index) => {
+            row[`note${index + 1}`] = note;
         });
+
+        worksheet.addRow(row);
     });
-    
-    // Tüm hücrelere sınır ekle
-    worksheet.eachRow((row, rowNumber) => {
-        row.eachCell((cell) => {
+
+    worksheet.eachRow(row => {
+        row.eachCell(cell => {
             cell.border = {
                 top: { style: 'thin' },
                 left: { style: 'thin' },
@@ -145,33 +169,18 @@ const generateExcel = async (projects, res) => {
             };
         });
     });
-    
-    // Başlık satırını renklendir
+
     worksheet.getRow(1).fill = {
         type: 'pattern',
         pattern: 'solid',
-        fgColor: { argb: 'FFD3D3D3' } // Açık gri
+        fgColor: { argb: 'FFD3D3D3' }
     };
-    
-    // HTTP başlıklarını ayarla
-    res.setHeader(
-        'Content-Type',
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    );
-    
-    // Dosya adını ayarla
+
     const date = new Date().toISOString().split('T')[0];
-    res.setHeader(
-        'Content-Disposition',
-        `attachment; filename=Proje_Raporu_${date}.xlsx`
-    );
-    
-    // Excel'i HTTP yanıtına yaz
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename=Proje_Raporu_${date}.xlsx`);
     await workbook.xlsx.write(res);
-    
-    // Yanıtı sonlandır
     res.end();
-    
     return true;
 };
 

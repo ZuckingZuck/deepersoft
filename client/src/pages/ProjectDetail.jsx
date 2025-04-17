@@ -1130,15 +1130,14 @@ const ProjectDetail = () => {
               value={documentType}
               onChange={(value) => setDocumentType(value)}
             >
-              <Select.Option value="AKTIVASYON FOTO">AKTIVASYON FOTO</Select.Option>
-              <Select.Option value="BARKOD">BARKOD</Select.Option>
-              <Select.Option value="HASARSIZLIK (FORM)">HASARSIZLIK (FORM)</Select.Option>
-              <Select.Option value="IMALAT FOTO">IMALAT FOTO</Select.Option>
-              <Select.Option value="ISLAH FOTO">ISLAH FOTO</Select.Option>
-              <Select.Option value="KESIF (FORM)">KESIF (FORM)</Select.Option>
-              <Select.Option value="KMZ (KMZ)">KMZ (KMZ)</Select.Option>
-              <Select.Option value="MUTABAKAT (FORM)">MUTABAKAT (FORM)</Select.Option>
-              <Select.Option value="OTDR (SOR)">OTDR (SOR)</Select.Option>
+              <Select.Option value="IMALAT">IMALAT</Select.Option>
+              <Select.Option value="AKTIVASYON">AKTIVASYON</Select.Option>
+              <Select.Option value="HASARSIZLIK">HASARSIZLIK</Select.Option>
+              <Select.Option value="KESIF">KESIF</Select.Option>
+              <Select.Option value="OTDR">OTDR</Select.Option>
+              <Select.Option value="OTDR KALIBRASYON">OTDR KALIBRASYON</Select.Option>
+              <Select.Option value="TOPOLOJI">TOPOLOJI</Select.Option>
+              <Select.Option value="DEVRE BILGISI">DEVRE BILGISI</Select.Option>
             </Select>
           </div>
 
