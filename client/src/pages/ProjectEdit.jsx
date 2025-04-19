@@ -1,78 +1,174 @@
-import React, { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { useSelector, useDispatch } from "react-redux";
-import { 
-  Form, 
-  Input, 
-  Select, 
-  Button, 
-  Card, 
-  Typography, 
-  Space, 
+// dosya: ProjectEdit.js
+import React, { useState, useEffect } from 'react';
+import {
+  Form,
+  Input,
+  Button,
+  Select,
+  DatePicker,
+  Card,
+  Typography,
   message,
-  Spin,
+  Divider,
   Row,
   Col,
-  DatePicker,
-  InputNumber
-} from "antd";
-import { 
-  SaveOutlined, 
+  Spin,
+  Alert,
+} from 'antd';
+import { useNavigate, useParams } from 'react-router-dom';
+import { useSelector, useDispatch } from 'react-redux';
+import {
+  ProjectOutlined,
+  SaveOutlined,
   ArrowLeftOutlined,
-  ProjectOutlined
-} from "@ant-design/icons";
-import api from "../utils/api";
-import moment from "moment";
+  ReloadOutlined,
+} from '@ant-design/icons';
+import moment from 'moment';
+import locale from 'antd/es/date-picker/locale/tr_TR';
+import api from '../utils/api';
+import { fetchAllUsers } from '../redux/userSlice';
+import {
+  fetchAllClusters,
+  setSelectedCity,
+  setSelectedCluster,
+  clearClusterError,
+} from '../redux/clusterSlice';
 
 const { Title } = Typography;
 const { Option } = Select;
 
 const ProjectEdit = () => {
-  const { id } = useParams();
-  const navigate = useNavigate();
   const [form] = Form.useForm();
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const { id } = useParams();
+
+  const supervisors = useSelector((state) => state.user.supervisors);
+  const contractors = useSelector((state) => state.user.contractors);
+  const userStatus = useSelector((state) => state.user.userStatus);
+
+  const cities = useSelector((state) => state.cluster.cities);
+  const clustersByCity = useSelector((state) => state.cluster.clustersByCity);
+  const selectedCity = useSelector((state) => state.cluster.selectedCity);
+  const selectedCluster = useSelector((state) => state.cluster.selectedCluster);
+  const clusterStatus = useSelector((state) => state.cluster.clusterStatus);
+  const clusterError = useSelector((state) => state.cluster.error);
+
   const [loading, setLoading] = useState(false);
+  const [fieldTypes, setFieldTypes] = useState([]);
+  const [fieldTypesLoading, setFieldTypesLoading] = useState(false);
+  const [fieldTypesError, setFieldTypesError] = useState(null);
+  const [availableClusters, setAvailableClusters] = useState([]);
   const [project, setProject] = useState(null);
-  const user = useSelector((state) => state.user.user);
 
   useEffect(() => {
     const fetchProject = async () => {
       try {
-        const response = await api.get(`/api/projects/${id}`);
-        setProject(response.data);
+        const response = await api.get(`/api/project/${id}`);
+        const data = response.data.project;
+        setProject(data);
+        console.log(data);
         form.setFieldsValue({
-          ...response.data,
-          date: response.data.date ? moment(response.data.date) : null
+          ...data,
+          fieldType: data.fieldType || null,
+          contractor: data.contractor?._id || null,
+          supervisor: data.supervisor?._id || null,
+          date: data.date ? moment(data.date) : null,
         });
+        dispatch(setSelectedCity(data.city));
+        dispatch(setSelectedCluster(data.clusterId));
       } catch (error) {
-        message.error("Proje bilgileri yüklenirken bir hata oluştu");
-        navigate("/projects");
+        message.error('Proje bilgileri yüklenirken bir hata oluştu');
+        navigate('/projects');
       }
     };
 
     fetchProject();
-  }, [id, form, navigate]);
+  }, [id, form, navigate, dispatch]);
+
+  const loadFieldTypes = async () => {
+    try {
+      setFieldTypesLoading(true);
+      setFieldTypesError(null);
+      const response = await api.get('/api/definitions/field');
+      setFieldTypes(response.data);
+    } catch (error) {
+      setFieldTypesError('Saha tipi bilgileri yüklenemedi.');
+    } finally {
+      setFieldTypesLoading(false);
+    }
+  };
+
+  const reloadClusters = async () => {
+    try {
+      dispatch(clearClusterError());
+      await dispatch(fetchAllClusters()).unwrap();
+      message.success('Öbek bilgileri başarıyla yüklendi.');
+    } catch (error) {
+      message.error('Öbek bilgileri yüklenemedi.');
+    }
+  };
+
+  useEffect(() => {
+    const fetchFormData = async () => {
+      setLoading(true);
+      try {
+        if (userStatus === 'idle') await dispatch(fetchAllUsers()).unwrap();
+        if (clusterStatus === 'idle') await dispatch(fetchAllClusters()).unwrap();
+        await loadFieldTypes();
+      } catch (error) {
+        message.error('Gerekli veriler yüklenirken hata oluştu.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFormData();
+  }, [dispatch, userStatus, clusterStatus]);
+
+  useEffect(() => {
+    if (selectedCity && clustersByCity[selectedCity]) {
+      setAvailableClusters(clustersByCity[selectedCity]);
+    } else {
+      setAvailableClusters([]);
+    }
+  }, [selectedCity, clustersByCity]);
+
+  useEffect(() => {
+    if (selectedCluster) {
+      form.setFieldValue('clusterName', selectedCluster.name);
+    }
+  }, [selectedCluster, form]);
+
+  const handleCityChange = (city) => {
+    dispatch(setSelectedCity(city));
+    form.setFieldsValue({ clusterId: undefined, clusterName: undefined });
+  };
+
+  const handleClusterChange = (clusterId) => {
+    dispatch(setSelectedCluster(clusterId));
+  };
 
   const onFinish = async (values) => {
     setLoading(true);
     try {
-      await api.put(`/api/projects/${id}`, {
+      await api.put(`/api/project/${id}`, {
         ...values,
-        date: values.date ? values.date.format("YYYY-MM-DD") : null
+        date: values.date ? values.date.format('YYYY-MM-DD') : null,
       });
-      message.success("Proje başarıyla güncellendi");
+      message.success('Proje başarıyla güncellendi');
       navigate(`/projects/${id}`);
     } catch (error) {
-      message.error("Proje güncellenirken bir hata oluştu");
+      message.error('Proje güncellenirken hata oluştu');
     } finally {
       setLoading(false);
     }
   };
 
-  if (!project) {
+  if (loading || !project) {
     return (
-      <div className="flex justify-center items-center h-screen">
-        <Spin size="large" tip="Proje yükleniyor..." />
+      <div className="flex justify-center items-center h-96">
+        <Spin size="large" tip="Veriler yükleniyor..." />
       </div>
     );
   }
@@ -82,174 +178,177 @@ const ProjectEdit = () => {
       <Card className="shadow-lg rounded-2xl border-0">
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center">
-            <Button 
-              icon={<ArrowLeftOutlined />} 
-              onClick={() => navigate(`/projects/${id}`)}
-              className="mr-4"
-            >
-              Geri Dön
-            </Button>
             <ProjectOutlined className="text-2xl mr-3 text-blue-600" />
             <Title level={2} className="m-0">Proje Düzenle</Title>
           </div>
+          <Button
+            type="default"
+            icon={<ArrowLeftOutlined />}
+            onClick={() => navigate(-1)}
+          >
+            Geri Dön
+          </Button>
         </div>
 
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={onFinish}
-          initialValues={{
-            name: project.name,
-            ddo: project.ddo,
-            tellcordiaNo: project.tellcordiaNo,
-            homePass: project.homePass,
-            city: project.city,
-            clusterName: project.clusterName,
-            fieldName: project.fieldName,
-            fieldType: project.fieldType,
-            status: project.status,
-            date: project.date ? moment(project.date) : null,
-            description: project.description
-          }}
-        >
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                name="name"
-                label="Proje Adı"
-                rules={[{ required: true, message: "Lütfen proje adını girin" }]}
-              >
-                <Input />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                name="status"
-                label="Durum"
-                rules={[{ required: true, message: "Lütfen durumu seçin" }]}
-              >
-                <Select>
-                  <Option value="İşlemde">İşlemde</Option>
-                  <Option value="Onayda">Onayda</Option>
-                  <Option value="İncelendi">İncelendi</Option>
-                  <Option value="Montaj Tamam">Montaj Tamam</Option>
-                  <Option value="Tamamlandı">Tamamlandı</Option>
-                  <Option value="Islah ve Düzenleme">Islah ve Düzenleme</Option>
-                  <Option value="Beklemede">Beklemede</Option>
-                  <Option value="Arşivde">Arşivde</Option>
-                </Select>
-              </Form.Item>
-            </Col>
-          </Row>
+        {(clusterStatus === 'failed' || fieldTypesError) && (
+          <>
+            {clusterStatus === 'failed' && (
+              <Alert
+                message="Öbek Verileri Yüklenemedi"
+                description={
+                  <>
+                    <p>{clusterError || 'API bağlantısı başarısız.'}</p>
+                    <Button type="primary" icon={<ReloadOutlined />} onClick={reloadClusters}>
+                      Yeniden Dene
+                    </Button>
+                  </>
+                }
+                type="error"
+                showIcon
+                className="mb-4"
+              />
+            )}
+            {fieldTypesError && (
+              <Alert
+                message="Saha Tipi Verileri Yüklenemedi"
+                description={
+                  <>
+                    <p>{fieldTypesError}</p>
+                    <Button type="primary" icon={<ReloadOutlined />} onClick={loadFieldTypes}>
+                      Yeniden Dene
+                    </Button>
+                  </>
+                }
+                type="error"
+                showIcon
+                className="mb-4"
+              />
+            )}
+          </>
+        )}
 
-          <Row gutter={16}>
-            <Col span={8}>
-              <Form.Item
-                name="ddo"
-                label="DDO"
-                rules={[{ required: true, message: "Lütfen DDO'yu girin" }]}
-              >
-                <Input />
-              </Form.Item>
-            </Col>
-            <Col span={8}>
-              <Form.Item
-                name="tellcordiaNo"
-                label="Tellcordia No"
-                rules={[{ required: true, message: "Lütfen Tellcordia numarasını girin" }]}
-              >
-                <Input />
-              </Form.Item>
-            </Col>
-            <Col span={8}>
-              <Form.Item
-                name="homePass"
-                label="Home Pass"
-                rules={[{ required: true, message: "Lütfen Home Pass'i girin" }]}
-              >
-                <Input />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={16}>
-            <Col span={8}>
-              <Form.Item
-                name="city"
-                label="Şehir"
-                rules={[{ required: true, message: "Lütfen şehri girin" }]}
-              >
-                <Input />
-              </Form.Item>
-            </Col>
-            <Col span={8}>
-              <Form.Item
-                name="clusterName"
-                label="Küme Adı"
-                rules={[{ required: true, message: "Lütfen küme adını girin" }]}
-              >
-                <Input />
-              </Form.Item>
-            </Col>
-            <Col span={8}>
-              <Form.Item
-                name="fieldName"
-                label="Saha Adı"
-                rules={[{ required: true, message: "Lütfen saha adını girin" }]}
-              >
-                <Input />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                name="fieldType"
-                label="Saha Tipi"
-                rules={[{ required: true, message: "Lütfen saha tipini seçin" }]}
-              >
-                <Select>
-                  <Option value="Yeraltı">Yeraltı</Option>
-                  <Option value="Havai">Havai</Option>
-                </Select>
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                name="date"
-                label="Tarih"
-                rules={[{ required: true, message: "Lütfen tarihi seçin" }]}
-              >
-                <DatePicker style={{ width: '100%' }} />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Form.Item
-            name="description"
-            label="Açıklama"
+        <Card>
+          <Form
+            form={form}
+            layout="vertical"
+            onFinish={onFinish}
+            scrollToFirstError
+            requiredMark={false}
           >
-            <Input.TextArea rows={4} />
-          </Form.Item>
+            <Row gutter={16}>
+              <Col span={12}>
+                <Form.Item label="Proje Adı" name="name" rules={[{ required: true }]}>
+                  <Input placeholder="Proje adı" />
+                </Form.Item>
+              </Col>
 
-          <Form.Item>
-            <Space>
-              <Button 
-                type="primary" 
-                icon={<SaveOutlined />} 
-                htmlType="submit"
-                loading={loading}
-                className="bg-blue-500 hover:bg-blue-600"
-              >
-                Kaydet
+              <Col span={12}>
+                <Form.Item label="Proje Tarihi" name="date">
+                  <DatePicker
+                    locale={locale}
+                    format="YYYY-MM-DD"
+                    style={{ width: '100%' }}
+                    placeholder="Tarih seç"
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <Row gutter={16}>
+              <Col span={12}>
+                <Form.Item label="Yüklenici" name="contractor">
+                  <Select placeholder="Yüklenici seç" allowClear>
+                    {contractors.map((c) => (
+                      <Option key={c._id} value={c._id}>
+                        {c.fullName}
+                      </Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+              </Col>
+
+              <Col span={12}>
+                <Form.Item label="Saha Sorumlusu" name="supervisor">
+                  <Select placeholder="Saha sorumlusu seç" allowClear>
+                    {supervisors.map((s) => (
+                      <Option key={s._id} value={s._id}>
+                        {s.fullName}
+                      </Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <Row gutter={16}>
+              <Col span={6}>
+                <Form.Item label="Saha Tipi" name="fieldType">
+                  <Select placeholder="Saha sorumlusu seç" allowClear>
+                    {fieldTypes.map((s) => (
+                      <Option key={s._id} value={s.name}>
+                        {s.name}
+                      </Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+              </Col>
+
+              <Col span={6}>
+                <Form.Item label="LOC" name="loc">
+                  <Input />
+                </Form.Item>
+              </Col>
+
+              <Col span={6}>
+                <Form.Item label="SIR" name="sir">
+                  <Input />
+                </Form.Item>
+              </Col>
+
+              <Col span={6}>
+                <Form.Item label="DDO" name="ddo">
+                  <Input />
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <Row gutter={16}>
+              <Col span={6}>
+                <Form.Item label="homePass" name="homePass" rules={[{ required: true }]}>
+                  <Input />
+                </Form.Item>
+              </Col>
+
+              <Col span={6}>
+                <Form.Item label="tellcordiaNo" name="tellcordiaNo" rules={[{ required: true }]}>
+                  <Input />
+                </Form.Item>
+              </Col>
+
+              <Col span={6}>
+                <Form.Item label="fieldName" name="fieldName" rules={[{ required: true }]}>
+                  <Input />
+                </Form.Item>
+              </Col>
+
+              <Col span={6}>
+                <Form.Item label="clusterName" name="clusterName" rules={[{ required: true }]}>
+                  <Input readOnly />
+                </Form.Item>
+              </Col>
+            </Row>
+            <Divider />
+
+            <Form.Item>
+              <Button type="primary" htmlType="submit" icon={<SaveOutlined />} loading={loading}>
+                Güncelle
               </Button>
-            </Space>
-          </Form.Item>
-        </Form>
+            </Form.Item>
+          </Form>
+        </Card>
       </Card>
     </div>
   );
 };
 
-export default ProjectEdit; 
+export default ProjectEdit;

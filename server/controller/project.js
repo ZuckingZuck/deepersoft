@@ -33,6 +33,43 @@ const CreateProject = async (req, res) => {
     }
 };
 
+const UpdateProject = async (req, res) => {
+    try {
+        const user = req.user;
+
+        // Taşeron kullanıcılar proje güncelleyemez
+        if (user.userType === 'Taşeron') {
+            return res.status(403).json({ message: "Proje güncelleme yetkiniz yok" });
+        }
+
+        const { id } = req.params;
+        const updatedData = req.body;
+
+        const existingProject = await ProjectDB.findById(id);
+        if (!existingProject) {
+            return res.status(404).json({ message: "Proje bulunamadı" });
+        }
+
+        // Proje verilerini güncelle
+        Object.assign(existingProject, updatedData);
+        await existingProject.save();
+
+        // Güncelleme log'u kaydet
+        const updateLog = new ProjectLogDB({
+            user: req.user._id,
+            project: existingProject._id,
+            note: "Proje güncellendi."
+        });
+        await updateLog.save();
+
+        res.status(200).json(existingProject);
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: "Sunucu hatası." });
+    }
+};
+
+
 const CreateProjectFromExcel = async (req, res) => {
     try {
         const projects = req.body.projects;
@@ -664,7 +701,7 @@ const UpdateProjectPoz = async (req, res) => {
 };
 
 module.exports = {
-    CreateProject, GetProjects, GetProjectDetail, DeleteProject,
+    CreateProject, UpdateProject, GetProjects, GetProjectDetail, DeleteProject,
     AddProjectLog, DeleteProjectLog, AddProjectPoz, ChangeProjectStatus, DeleteProjectPoz,
     AddProjectDocument, GetProjectDocuments, DeleteProjectDocument, GetProject, GetAllProjects,
     SearchProject, UpdateProjectPoz, CreateProjectFromExcel

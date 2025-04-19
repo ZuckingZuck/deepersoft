@@ -15,7 +15,7 @@ const ProjectSchema = mongoose.Schema({
     },
     clusterName: {
         type: String,
-        required: true, 
+        default: "ISTAD-UMRANIYE_GPON_2023-1"
     },
     fieldName: {
         type: String,

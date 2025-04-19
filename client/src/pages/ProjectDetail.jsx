@@ -59,7 +59,7 @@ import AddPozModal from '../components/AddPozModal';
 import FileUpload from '../components/FileUpload';
 import cdnAdapter from '../utils/cdnAdapter';
 import axios from 'axios';
-
+import { NavLink } from 'react-router-dom';
 const { Title, Text } = Typography;
 
 // Durum konfigürasyonu
@@ -115,7 +115,7 @@ const ProjectDetail = () => {
   // Proje detaylarını çeken fonksiyon
   const fetchProjectDetails = async (refresh) => {
     try {
-      if(refresh == true) setLoading(true);
+      if (refresh == true) setLoading(true);
       setLoadingDocuments(true); // Belge yükleme durumunu da ayarla
       setError(null);
 
@@ -312,8 +312,8 @@ const ProjectDetail = () => {
     } catch (error) {
       console.error('Poz eklenirken hata:', error);
       message.error('Poz eklenirken bir hata oluştu');
-      
-    }finally {
+
+    } finally {
       setIsAddingPoz(false);
     }
   };
@@ -748,7 +748,7 @@ const ProjectDetail = () => {
               Projelere Dön
             </Button>
             {canChangeStatus && (
-              <div>
+              <div className='flex gap-3'>
                 <Button
                   danger
                   type="primary"
@@ -758,6 +758,11 @@ const ProjectDetail = () => {
                 >
                   Sil
                 </Button>
+                <NavLink to={`/projects/${id}/edit`}>
+                  <Button type="primary" icon={<EditOutlined />} className="rounded-xl shadow px-6 py-2 text-base">
+                    Güncelle
+                  </Button>
+                </NavLink>
                 <Button
                   type="primary"
                   onClick={() => {
@@ -851,7 +856,7 @@ const ProjectDetail = () => {
                   {
                     user.userType === "Sistem Yetkilisi" && (
                       <Descriptions.Item label={<span><CodeOutlined className="mr-1" />Taşeron Kazanç</span>}>
-                       {project.totalContractorPrice.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })} 
+                        {project.totalContractorPrice.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
                       </Descriptions.Item>
                     )
                   }
